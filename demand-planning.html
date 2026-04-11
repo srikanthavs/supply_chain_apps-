@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demand Planning App</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface2: #273549;
+      --border: #334155;
+      --accent: #6366f1;
+      --accent2: #22d3ee;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header h1 { font-size: 20px; font-weight: 700; color: var(--accent2); letter-spacing: -0.3px; }
+    header span { color: var(--muted); font-size: 13px; }
+
+    /* ── Layout ── */
+    .app { display: flex; min-height: calc(100vh - 54px); }
+
+    nav {
+      width: 200px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 16px 0;
+      flex-shrink: 0;
+    }
+    nav a {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 20px;
+      color: var(--muted);
+      text-decoration: none;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+    nav a:hover, nav a.active {
+      color: var(--text);
+      background: var(--surface2);
+      border-left-color: var(--accent);
+    }
+    nav a span.icon { font-size: 16px; }
+
+    main { flex: 1; padding: 24px 28px; overflow-y: auto; }
+
+    /* ── Sections ── */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── KPI Cards ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+    .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; }
+    .kpi .value { font-size: 30px; font-weight: 700; margin: 6px 0 2px; }
+    .kpi .sub { font-size: 12px; }
+    .kpi.blue .value { color: var(--accent2); }
+    .kpi.green .value { color: var(--success); }
+    .kpi.yellow .value { color: var(--warning); }
+    .kpi.red .value { color: var(--danger); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Two columns ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 8px 12px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-green { background: #10b98122; color: var(--success); }
+    .badge-yellow { background: #f59e0b22; color: var(--warning); }
+    .badge-red { background: #ef444422; color: var(--danger); }
+
+    /* ── Forms ── */
+    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 14px; }
+    label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 5px; }
+    input, select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 9px 18px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: filter 0.15s, transform 0.1s;
+    }
+    .btn:hover { filter: brightness(1.12); }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+    /* ── Progress bar ── */
+    .progress-bg { background: var(--surface2); border-radius: 6px; height: 8px; overflow: hidden; }
+    .progress-fill { height: 8px; border-radius: 6px; transition: width 0.4s; }
+
+    /* ── Chart container ── */
+    .chart-container { position: relative; height: 280px; }
+
+    /* ── Forecast method selector ── */
+    .method-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .method-tab {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      background: transparent;
+      transition: all 0.15s;
+    }
+    .method-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* ── Scrollable list ── */
+    .scroll-list { max-height: 260px; overflow-y: auto; }
+
+    /* ── Alert ── */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .alert-warn { background: #f59e0b18; border: 1px solid #f59e0b44; color: #fbbf24; }
+    .alert-danger { background: #ef444418; border: 1px solid #ef444444; color: #f87171; }
+    .alert-info { background: #6366f118; border: 1px solid #6366f144; color: #a5b4fc; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📦 DemandIQ</h1>
+  <span id="headerDate"></span>
+</header>
+
+<div class="app">
+  <!-- Sidebar -->
+  <nav>
+    <a class="active" data-tab="dashboard"><span class="icon">🏠</span> Dashboard</a>
+    <a data-tab="products"><span class="icon">📋</span> Products</a>
+    <a data-tab="forecast"><span class="icon">📈</span> Forecast</a>
+    <a data-tab="inventory"><span class="icon">🗄️</span> Inventory</a>
+    <a data-tab="orders"><span class="icon">🛒</span> Orders</a>
+  </nav>
+
+  <main>
+    <!-- ══════════════ DASHBOARD ══════════════ -->
+    <div class="section active" id="tab-dashboard">
+      <h2 style="margin-bottom:20px;font-size:18px;">Overview</h2>
+
+      <div class="kpi-grid">
+        <div class="kpi blue">
+          <div class="label">Total SKUs</div>
+          <div class="value" id="kpi-skus">0</div>
+          <div class="sub" style="color:var(--muted)">Active products</div>
+        </div>
+        <div class="kpi green">
+          <div class="label">Forecast Accuracy</div>
+          <div class="value" id="kpi-accuracy">—</div>
+          <div class="sub" style="color:var(--success)">Last 3 months avg</div>
+        </div>
+        <div class="kpi yellow">
+          <div class="label">Low-Stock Alerts</div>
+          <div class="value" id="kpi-alerts">0</div>
+          <div class="sub" style="color:var(--warning)">Items below reorder point</div>
+        </div>
+        <div class="kpi red">
+          <div class="label">Stockout Risk</div>
+          <div class="value" id="kpi-stockout">0</div>
+          <div class="sub" style="color:var(--danger)">Items within 7 days</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">📊 Demand Trend (12 Months)</div>
+          <div class="chart-container"><canvas id="demandTrendChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🔮 Next 3-Month Forecast</div>
+          <div class="chart-container"><canvas id="forecastSummaryChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚠️ Active Alerts</div>
+        <div id="alertsList"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════ PRODUCTS ══════════════ -->
+    <div class="section" id="tab-products">
+      <h2 style="margin-bottom:20px;font-size:18px;">Product Catalog</h2>
+
+      <div class="card">
+        <div class="card-title">➕ Add Product</div>
+        <div class="form-row">
+          <div><label>SKU</label><input id="p-sku" placeholder="e.g. SKU-001"></div>
+          <div><label>Product Name</label><input id="p-name" placeholder="e.g. Widget A"></div>
+          <div><label>Category</label>
+            <select id="p-category">
+              <option>Electronics</option>
+              <option>Apparel</option>
+              <option>Food & Beverage</option>
+              <option>Home & Garden</option>
+              <option>Industrial</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div><label>Unit Cost ($)</label><input id="p-cost" type="number" placeholder="0.00"></div>
+          <div><label>Lead Time (days)</label><input id="p-lead" type="number" placeholder="7"></div>
+        </div>
+        <button class="btn btn-primary" onclick="addProduct()">Add Product</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📦 Product List</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Cost</th><th>Lead Time</th><th>Stock</th><th>Status</th><th></th></tr></thead>
+            <tbody id="productTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ FORECAST ══════════════ -->
+    <div class="section" id="tab-forecast">
+      <h2 style="margin-bottom:20px;font-size:18px;">Demand Forecasting</h2>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">📥 Enter Historical Demand</div>
+          <div class="form-row">
+            <div>
+              <label>Product</label>
+              <select id="f-product" onchange="loadProductDemand()"></select>
+            </div>
+            <div><label>Month</label>
+              <select id="f-month">
+                <option>Jan</option><option>Feb</option><option>Mar</option>
+                <option>Apr</option><option>May</option><option>Jun</option>
+                <option>Jul</option><option>Aug</option><option>Sep</option>
+                <option>Oct</option><option>Nov</option><option>Dec</option>
+              </select>
+            </div>
+            <div><label>Year</label><input id="f-year" type="number" value="2025"></div>
+            <div><label>Actual Units Sold</label><input id="f-units" type="number" placeholder="0"></div>
+          </div>
+          <button class="btn btn-primary" onclick="addDemandEntry()">Save Entry</button>
+
+          <div style="margin-top:16px;">
+            <div class="card-title" style="margin-bottom:10px;">📜 Demand History</div>
+            <div class="scroll-list table-wrap">
+              <table><thead><tr><th>Month</th><th>Year</th><th>Units</th><th></th></tr></thead>
+              <tbody id="demandHistoryTable"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">⚙️ Forecast Settings</div>
+          <div class="form-row">
+            <div><label>Forecast Horizon (months)</label>
+              <select id="f-horizon"><option>3</option><option>6</option><option>12</option></select>
+            </div>
+          </div>
+          <label style="margin-bottom:8px;display:block;">Forecast Method</label>
+          <div class="method-tabs">
+            <button class="method-tab active" onclick="setMethod(this,'sma')">Simple Moving Avg</button>
+            <button class="method-tab" onclick="setMethod(this,'wma')">Weighted Moving Avg</button>
+            <button class="method-tab" onclick="setMethod(this,'exp')">Exp. Smoothing</button>
+          </div>
+          <div id="method-params">
+            <div class="form-row">
+              <div><label>Moving Avg Periods (n)</label><input id="f-periods" type="number" value="3" min="1" max="12"></div>
+            </div>
+          </div>
+          <div id="exp-params" style="display:none;">
+            <div class="form-row">
+              <div><label>Alpha (0–1)</label><input id="f-alpha" type="number" value="0.3" min="0.01" max="0.99" step="0.01"></div>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="runForecast()">🔮 Generate Forecast</button>
+        </div>
+      </div>
+
+      <div class="card" id="forecastResultCard" style="display:none;">
+        <div class="card-title">📈 Forecast Results — <span id="forecastProductLabel"></span></div>
+        <div class="chart-container"><canvas id="forecastChart"></canvas></div>
+        <div style="margin-top:16px;">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Period</th><th>Forecasted Units</th><th>Lower Bound (−10%)</th><th>Upper Bound (+10%)</th></tr></thead>
+              <tbody id="forecastTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ INVENTORY ══════════════ -->
+    <div class="section" id="tab-inventory">
+      <h2 style="margin-bottom:20px;font-size:18px;">Inventory Management</h2>
+
+      <div class="card">
+        <div class="card-title">🔧 Update Stock Levels</div>
+        <div class="form-row">
+          <div><label>Product</label><select id="i-product"></select></div>
+          <div><label>Current Stock (units)</label><input id="i-stock" type="number" placeholder="0"></div>
+          <div><label>Reorder Point</label><input id="i-reorder" type="number" placeholder="0"></div>
+          <div><label>Safety Stock</label><input id="i-safety" type="number" placeholder="0"></div>
+        </div>
+        <button class="btn btn-primary" onclick="updateInventory()">Update Inventory</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 Inventory Status</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>SKU</th><th>Product</th><th>Stock</th><th>Reorder Pt</th><th>Safety Stock</th><th>Days of Supply</th><th>Status</th></tr></thead>
+            <tbody id="inventoryTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📦 Stock Level Overview</div>
+        <div class="chart-container"><canvas id="stockChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ══════════════ ORDERS ══════════════ -->
+    <div class="section" id="tab-orders">
+      <h2 style="margin-bottom:20px;font-size:18px;">Purchase Orders</h2>
+
+      <div class="card">
+        <div class="card-title">➕ Create Purchase Order</div>
+        <div class="form-row">
+          <div><label>Product</label><select id="o-product"></select></div>
+          <div><label>Order Quantity</label><input id="o-qty" type="number" placeholder="0"></div>
+          <div><label>Expected Delivery</label><input id="o-date" type="date"></div>
+          <div><label>Supplier</label><input id="o-supplier" placeholder="Supplier name"></div>
+        </div>
+        <button class="btn btn-primary" onclick="createOrder()">Create Order</button>
+        <button class="btn btn-secondary" style="margin-left:8px;" onclick="autoOrder()">⚡ Auto-Suggest Orders</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🛒 Order Log</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>PO#</th><th>Product</th><th>Qty</th><th>Supplier</th><th>Delivery</th><th>Status</th><th></th></tr></thead>
+            <tbody id="orderTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let state = {
+  products: [],
+  demand: {},      // { skuId: [{month, year, units}] }
+  inventory: {},   // { skuId: {stock, reorder, safety} }
+  orders: [],
+  forecasts: {},   // { skuId: [values] }
+  forecastMethod: 'sma'
+};
+
+/* ── seed with sample data ── */
+function seed() {
+  state.products = [
+    { id:'SKU-001', name:'Widget Alpha', category:'Electronics', cost:24.99, lead:7  },
+    { id:'SKU-002', name:'Gadget Pro',   category:'Electronics', cost:59.99, lead:14 },
+    { id:'SKU-003', name:'Blue T-Shirt', category:'Apparel',     cost:12.50, lead:10 },
+  ];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const base = { 'SKU-001':[120,135,110,150,160,145,170,180,165,190,210,200],
+                 'SKU-002':[60,55,70,65,80,90,85,95,100,110,115,120],
+                 'SKU-003':[200,180,220,240,260,300,280,310,270,230,250,240] };
+  state.products.forEach(p => {
+    state.demand[p.id] = months.map((m,i) => ({ month:m, year:2025, units:base[p.id][i] }));
+    state.inventory[p.id] = { stock: Math.floor(Math.random()*300+50), reorder: 80, safety: 30 };
+  });
+}
+seed();
+
+/* ══════════════════════════════════════════
+   NAV
+══════════════════════════════════════════ */
+document.querySelectorAll('nav a').forEach(a => {
+  a.addEventListener('click', () => {
+    document.querySelectorAll('nav a').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
+    a.classList.add('active');
+    document.getElementById('tab-' + a.dataset.tab).classList.add('active');
+    renderAll();
+  });
+});
+
+/* ══════════════════════════════════════════
+   PRODUCTS
+══════════════════════════════════════════ */
+function addProduct() {
+  const id   = document.getElementById('p-sku').value.trim();
+  const name = document.getElementById('p-name').value.trim();
+  if (!id || !name) { alert('SKU and Name are required.'); return; }
+  if (state.products.find(p => p.id === id)) { alert('SKU already exists.'); return; }
+  state.products.push({
+    id, name,
+    category: document.getElementById('p-category').value,
+    cost: parseFloat(document.getElementById('p-cost').value) || 0,
+    lead: parseInt(document.getElementById('p-lead').value) || 7
+  });
+  state.demand[id] = [];
+  state.inventory[id] = { stock: 0, reorder: 50, safety: 20 };
+  ['p-sku','p-name','p-cost','p-lead'].forEach(x => document.getElementById(x).value = '');
+  renderAll();
+}
+
+function deleteProduct(id) {
+  if (!confirm('Delete this product?')) return;
+  state.products = state.products.filter(p => p.id !== id);
+  delete state.demand[id];
+  delete state.inventory[id];
+  renderAll();
+}
+
+function renderProducts() {
+  const tbody = document.getElementById('productTable');
+  tbody.innerHTML = state.products.map(p => {
+    const inv = state.inventory[p.id] || {};
+    const stock = inv.stock || 0;
+    const status = stock <= 0 ? 'badge-red' : stock <= inv.reorder ? 'badge-yellow' : 'badge-green';
+    const label  = stock <= 0 ? 'Out of Stock' : stock <= inv.reorder ? 'Low Stock' : 'OK';
+    return `<tr>
+      <td>${p.id}</td><td>${p.name}</td><td>${p.category}</td>
+      <td>$${p.cost.toFixed(2)}</td><td>${p.lead}d</td>
+      <td>${stock}</td>
+      <td><span class="badge ${status}">${label}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">Delete</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="color:var(--muted);text-align:center;padding:24px;">No products yet</td></tr>';
+}
+
+/* ══════════════════════════════════════════
+   FORECAST
+══════════════════════════════════════════ */
+function setMethod(el, method) {
+  state.forecastMethod = method;
+  document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('method-params').style.display = method !== 'exp' ? 'block' : 'none';
+  document.getElementById('exp-params').style.display    = method === 'exp' ? 'block' : 'none';
+}
+
+function addDemandEntry() {
+  const skuId = document.getElementById('f-product').value;
+  const month = document.getElementById('f-month').value;
+  const year  = parseInt(document.getElementById('f-year').value);
+  const units = parseInt(document.getElementById('f-units').value);
+  if (!skuId || isNaN(units)) { alert('Fill all fields.'); return; }
+  if (!state.demand[skuId]) state.demand[skuId] = [];
+  const existing = state.demand[skuId].findIndex(d => d.month===month && d.year===year);
+  if (existing >= 0) state.demand[skuId][existing].units = units;
+  else state.demand[skuId].push({ month, year, units });
+  state.demand[skuId].sort((a,b) => a.year!==b.year ? a.year-b.year : monthIdx(a.month)-monthIdx(b.month));
+  document.getElementById('f-units').value = '';
+  renderForecast();
+}
+
+function loadProductDemand() { renderForecast(); }
+
+function monthIdx(m) {
+  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(m);
+}
+
+function forecastSMA(series, n, horizon) {
+  const result = [];
+  for (let i = 0; i < horizon; i++) {
+    const window = [...series, ...result].slice(-(n));
+    result.push(Math.round(window.reduce((a,b)=>a+b,0)/window.length));
+  }
+  return result;
+}
+
+function forecastWMA(series, n, horizon) {
+  const result = [];
+  for (let i = 0; i < horizon; i++) {
+    const window = [...series, ...result].slice(-(n));
+    let total = 0, wsum = 0;
+    window.forEach((v,j) => { const w=j+1; total+=v*w; wsum+=w; });
+    result.push(Math.round(total/wsum));
+  }
+  return result;
+}
+
+function forecastEXP(series, alpha, horizon) {
+  let level = series[0];
+  for (let i = 1; i < series.length; i++) level = alpha*series[i] + (1-alpha)*level;
+  const result = [];
+  for (let i = 0; i < horizon; i++) {
+    result.push(Math.round(level));
+    level = alpha*level + (1-alpha)*level;
+  }
+  return result;
+}
+
+function runForecast() {
+  const skuId   = document.getElementById('f-product').value;
+  if (!skuId) return;
+  const history = state.demand[skuId] || [];
+  if (history.length < 2) { alert('Need at least 2 historical data points.'); return; }
+  const horizon = parseInt(document.getElementById('f-horizon').value);
+  const series  = history.map(d => d.units);
+  let forecast;
+  if (state.forecastMethod === 'sma') {
+    const n = parseInt(document.getElementById('f-periods').value) || 3;
+    forecast = forecastSMA(series, n, horizon);
+  } else if (state.forecastMethod === 'wma') {
+    const n = parseInt(document.getElementById('f-periods').value) || 3;
+    forecast = forecastWMA(series, n, horizon);
+  } else {
+    const alpha = parseFloat(document.getElementById('f-alpha').value) || 0.3;
+    forecast = forecastEXP(series, alpha, horizon);
+  }
+  state.forecasts[skuId] = forecast;
+
+  // Show result card
+  document.getElementById('forecastResultCard').style.display = 'block';
+  const prod = state.products.find(p => p.id===skuId);
+  document.getElementById('forecastProductLabel').textContent = prod ? prod.name : skuId;
+
+  // Render table
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const lastEntry = history[history.length-1];
+  let mi = monthIdx(lastEntry.month)+1, yr = lastEntry.year;
+  const labels = forecast.map(() => {
+    if (mi >= 12) { mi=0; yr++; }
+    const label = months[mi] + ' ' + yr;
+    mi++;
+    return label;
+  });
+
+  document.getElementById('forecastTable').innerHTML = forecast.map((v,i) => `
+    <tr>
+      <td>${labels[i]}</td>
+      <td><strong>${v}</strong></td>
+      <td style="color:var(--danger)">${Math.round(v*0.9)}</td>
+      <td style="color:var(--success)">${Math.round(v*1.1)}</td>
+    </tr>`).join('');
+
+  // Chart
+  const ctx = document.getElementById('forecastChart').getContext('2d');
+  if (window._forecastChart) window._forecastChart.destroy();
+  const histLabels = history.map(d => d.month + ' ' + d.year);
+  window._forecastChart = new Chart(ctx, {
+    data: {
+      labels: [...histLabels, ...labels],
+      datasets: [
+        { type:'line', label:'Historical', data:[...series, ...Array(horizon).fill(null)], borderColor:'#22d3ee', backgroundColor:'#22d3ee22', fill:true, tension:0.3, pointRadius:3 },
+        { type:'line', label:'Forecast',   data:[...Array(series.length-1).fill(null), series[series.length-1], ...forecast], borderColor:'#f59e0b', borderDash:[5,5], backgroundColor:'#f59e0b18', fill:true, tension:0.3, pointRadius:4 },
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#94a3b8'}}}, scales:{ x:{ticks:{color:'#94a3b8'},grid:{color:'#1e293b'}}, y:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}} } }
+  });
+  renderAll();
+}
+
+function renderForecast() {
+  const sel = document.getElementById('f-product');
+  const skuId = sel.value;
+  const history = skuId ? (state.demand[skuId] || []) : [];
+  document.getElementById('demandHistoryTable').innerHTML = history.length
+    ? history.map((d,i) => `<tr><td>${d.month}</td><td>${d.year}</td><td>${d.units}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteDemandEntry('${skuId}',${i})">✕</button></td></tr>`).join('')
+    : '<tr><td colspan="4" style="color:var(--muted);padding:12px;">No data</td></tr>';
+}
+
+function deleteDemandEntry(skuId, idx) {
+  state.demand[skuId].splice(idx, 1);
+  renderForecast();
+}
+
+/* ══════════════════════════════════════════
+   INVENTORY
+══════════════════════════════════════════ */
+function updateInventory() {
+  const skuId   = document.getElementById('i-product').value;
+  const stock   = parseInt(document.getElementById('i-stock').value)   || 0;
+  const reorder = parseInt(document.getElementById('i-reorder').value) || 0;
+  const safety  = parseInt(document.getElementById('i-safety').value)  || 0;
+  if (!skuId) return;
+  state.inventory[skuId] = { stock, reorder, safety };
+  ['i-stock','i-reorder','i-safety'].forEach(x => document.getElementById(x).value = '');
+  renderAll();
+}
+
+function renderInventory() {
+  const tbody = document.getElementById('inventoryTable');
+  tbody.innerHTML = state.products.map(p => {
+    const inv = state.inventory[p.id] || {stock:0,reorder:50,safety:20};
+    const avgDemand = avgMonthlyDemand(p.id);
+    const dos = avgDemand > 0 ? Math.round(inv.stock / (avgDemand/30)) : '∞';
+    const status = inv.stock <= 0 ? ['badge-red','Out of Stock']
+                 : inv.stock <= inv.reorder ? ['badge-yellow','Low Stock']
+                 : ['badge-green','OK'];
+    return `<tr>
+      <td>${p.id}</td><td>${p.name}</td>
+      <td><strong>${inv.stock}</strong></td>
+      <td>${inv.reorder}</td>
+      <td>${inv.safety}</td>
+      <td>${dos} days</td>
+      <td><span class="badge ${status[0]}">${status[1]}</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px;">No products</td></tr>';
+}
+
+function avgMonthlyDemand(skuId) {
+  const hist = state.demand[skuId] || [];
+  if (!hist.length) return 0;
+  return hist.reduce((s,d) => s+d.units, 0) / hist.length;
+}
+
+/* ══════════════════════════════════════════
+   ORDERS
+══════════════════════════════════════════ */
+let orderCounter = 100;
+function createOrder() {
+  const skuId    = document.getElementById('o-product').value;
+  const qty      = parseInt(document.getElementById('o-qty').value) || 0;
+  const date     = document.getElementById('o-date').value;
+  const supplier = document.getElementById('o-supplier').value || 'TBD';
+  if (!skuId || qty <= 0 || !date) { alert('Fill all order fields.'); return; }
+  state.orders.push({ po:`PO-${++orderCounter}`, skuId, qty, date, supplier, status:'Pending' });
+  ['o-qty','o-date','o-supplier'].forEach(x => document.getElementById(x).value='');
+  renderOrders();
+}
+
+function autoOrder() {
+  let added = 0;
+  state.products.forEach(p => {
+    const inv = state.inventory[p.id] || {};
+    if ((inv.stock || 0) <= (inv.reorder || 50)) {
+      const avgD   = avgMonthlyDemand(p.id);
+      const qty    = Math.max(Math.round(avgD * 2), inv.reorder * 2 || 100);
+      const deliv  = new Date(); deliv.setDate(deliv.getDate() + p.lead);
+      state.orders.push({ po:`PO-${++orderCounter}`, skuId:p.id, qty, date:deliv.toISOString().slice(0,10), supplier:'Auto-Suggested', status:'Suggested' });
+      added++;
+    }
+  });
+  if (added) { alert(`${added} order(s) auto-suggested.`); renderOrders(); }
+  else alert('No items need reordering right now.');
+}
+
+function deleteOrder(po) {
+  state.orders = state.orders.filter(o => o.po !== po);
+  renderOrders();
+}
+
+function receiveOrder(po) {
+  const ord = state.orders.find(o => o.po===po);
+  if (!ord) return;
+  ord.status = 'Received';
+  if (!state.inventory[ord.skuId]) state.inventory[ord.skuId] = {stock:0,reorder:50,safety:20};
+  state.inventory[ord.skuId].stock += ord.qty;
+  renderAll();
+}
+
+function renderOrders() {
+  const tbody = document.getElementById('orderTable');
+  tbody.innerHTML = state.orders.map(o => {
+    const prod = state.products.find(p=>p.id===o.skuId);
+    const sc = o.status==='Received'?'badge-green':o.status==='Suggested'?'badge-yellow':'badge-blue';
+    return `<tr>
+      <td>${o.po}</td>
+      <td>${prod ? prod.name : o.skuId}</td>
+      <td>${o.qty}</td>
+      <td>${o.supplier}</td>
+      <td>${o.date}</td>
+      <td><span class="badge ${sc}" style="${sc==='badge-blue'?'background:#6366f118;color:#a5b4fc':''}">${o.status}</span></td>
+      <td style="display:flex;gap:6px;">
+        ${o.status!=='Received'?`<button class="btn btn-primary btn-sm" onclick="receiveOrder('${o.po}')">Receive</button>`:''}
+        <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.po}')">Delete</button>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px;">No orders</td></tr>';
+}
+
+/* ══════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════ */
+function renderDashboard() {
+  document.getElementById('kpi-skus').textContent = state.products.length;
+
+  let low=0, stockout=0;
+  state.products.forEach(p => {
+    const inv = state.inventory[p.id] || {};
+    const avgD = avgMonthlyDemand(p.id);
+    const dos  = avgD>0 ? inv.stock/(avgD/30) : 999;
+    if (inv.stock <= inv.reorder) low++;
+    if (dos <= 7) stockout++;
+  });
+  document.getElementById('kpi-alerts').textContent   = low;
+  document.getElementById('kpi-stockout').textContent = stockout;
+
+  // Accuracy: compare last forecast to actual (mock)
+  const accuracies = state.products.map(p => {
+    const hist = state.demand[p.id] || [];
+    if (hist.length < 4) return null;
+    // use last-period SMA3 vs actual
+    const series = hist.map(d=>d.units);
+    const pred   = Math.round((series[series.length-4]+series[series.length-3]+series[series.length-2])/3);
+    const actual = series[series.length-1];
+    return Math.max(0, 100 - Math.abs(pred-actual)/actual*100);
+  }).filter(x=>x!==null);
+  const acc = accuracies.length ? Math.round(accuracies.reduce((a,b)=>a+b,0)/accuracies.length) : null;
+  document.getElementById('kpi-accuracy').textContent = acc!==null ? acc+'%' : '—';
+
+  // Alerts
+  const alertsEl = document.getElementById('alertsList');
+  let html = '';
+  state.products.forEach(p => {
+    const inv = state.inventory[p.id] || {};
+    if (inv.stock <= 0) html += `<div class="alert alert-danger">🚨 <strong>${p.name}</strong> — Out of stock! Reorder immediately.</div>`;
+    else if (inv.stock <= inv.reorder) html += `<div class="alert alert-warn">⚠️ <strong>${p.name}</strong> — Low stock (${inv.stock} units). Below reorder point of ${inv.reorder}.</div>`;
+  });
+  alertsEl.innerHTML = html || '<div class="alert alert-info">✅ No active alerts. All stock levels are healthy.</div>';
+
+  // Demand trend chart
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const colors = ['#22d3ee','#f59e0b','#6366f1'];
+  const datasets = state.products.slice(0,3).map((p,i) => ({
+    label: p.name,
+    data: months.map(m => { const e=state.demand[p.id]?.find(d=>d.month===m&&d.year===2025); return e?e.units:null; }),
+    borderColor: colors[i], backgroundColor: colors[i]+'22', fill:false, tension:0.3, pointRadius:3
+  }));
+
+  const ctx1 = document.getElementById('demandTrendChart').getContext('2d');
+  if (window._trendChart) window._trendChart.destroy();
+  window._trendChart = new Chart(ctx1, {
+    type:'line', data:{ labels:months, datasets },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#94a3b8'}}}, scales:{x:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}},y:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}}} }
+  });
+
+  // Forecast summary
+  const ctx2 = document.getElementById('forecastSummaryChart').getContext('2d');
+  if (window._fSumChart) window._fSumChart.destroy();
+  const fMonths = ['Month +1','Month +2','Month +3'];
+  const fDatasets = state.products.filter(p => state.forecasts[p.id]).slice(0,3).map((p,i) => ({
+    label: p.name,
+    data: state.forecasts[p.id].slice(0,3),
+    backgroundColor: colors[i]+'99', borderColor: colors[i], borderRadius:6
+  }));
+  window._fSumChart = new Chart(ctx2, {
+    type:'bar', data:{ labels:fMonths, datasets: fDatasets.length ? fDatasets : [{label:'Run a forecast first',data:[0,0,0],backgroundColor:'#33415555'}] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#94a3b8'}}}, scales:{x:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}},y:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}}} }
+  });
+}
+
+/* ══════════════════════════════════════════
+   STOCK CHART
+══════════════════════════════════════════ */
+function renderStockChart() {
+  const ctx = document.getElementById('stockChart').getContext('2d');
+  if (window._stockChart) window._stockChart.destroy();
+  const labels = state.products.map(p=>p.name);
+  const stocks  = state.products.map(p=>(state.inventory[p.id]||{stock:0}).stock);
+  const reorders = state.products.map(p=>(state.inventory[p.id]||{reorder:50}).reorder);
+  window._stockChart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        { label:'Current Stock', data:stocks, backgroundColor:'#6366f188', borderColor:'#6366f1', borderRadius:6 },
+        { label:'Reorder Point', data:reorders, backgroundColor:'#f59e0b66', borderColor:'#f59e0b', borderRadius:6 }
+      ]
+    },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#94a3b8'}}}, scales:{x:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}},y:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}}} }
+  });
+}
+
+/* ══════════════════════════════════════════
+   DROPDOWNS
+══════════════════════════════════════════ */
+function refreshSelects() {
+  ['f-product','i-product','o-product'].forEach(id => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = state.products.map(p=>`<option value="${p.id}">${p.id} — ${p.name}</option>`).join('');
+    if (cur && state.products.find(p=>p.id===cur)) sel.value = cur;
+  });
+}
+
+/* ══════════════════════════════════════════
+   RENDER ALL
+══════════════════════════════════════════ */
+function renderAll() {
+  refreshSelects();
+  renderProducts();
+  renderForecast();
+  renderInventory();
+  renderOrders();
+  renderDashboard();
+  renderStockChart();
+}
+
+/* ── date header ── */
+document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+/* ── init ── */
+renderAll();
+</script>
+</body>
+</html>

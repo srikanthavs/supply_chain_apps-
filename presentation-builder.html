@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PresentIQ — Presentation Builder</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f6fa;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #1a202c;
+    --muted: #718096;
+    --accent: #2563eb;
+    --accent-dark: #1e40af;
+    --accent-light: #eff6ff;
+    --success: #16a34a;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ─── FORM VIEW ─────────────────────────────────────── */
+  #form-view { max-width: 860px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  .app-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 0 28px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .app-logo { font-size: 1.5rem; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
+  .app-logo span { color: var(--text); }
+  .btn-generate {
+    background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 12px 28px; font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn-generate:hover { background: var(--accent-dark); transform: translateY(-1px); }
+  .btn-generate:active { transform: translateY(0); }
+
+  .form-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .form-section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 24px; cursor: pointer; user-select: none;
+    transition: background 0.15s;
+  }
+  .form-section-header:hover { background: var(--accent-light); }
+  .section-title-row { display: flex; align-items: center; gap: 12px; }
+  .section-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--accent-light); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+  }
+  .section-label { font-weight: 700; font-size: 1rem; }
+  .section-hint { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+  .section-chevron { color: var(--muted); font-size: 1rem; transition: transform 0.2s; }
+  .form-section.collapsed .section-chevron { transform: rotate(-90deg); }
+  .form-section-body { padding: 0 24px 24px; border-top: 1px solid var(--border); }
+  .form-section.collapsed .form-section-body { display: none; }
+
+  .field { margin-top: 20px; }
+  .field label { display: block; font-size: 0.875rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .field-hint { font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; }
+  .field input, .field textarea, .field select {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 0.9rem; font-family: inherit; color: var(--text);
+    background: #fff; transition: border-color 0.2s;
+    resize: vertical;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+  }
+  .field textarea { min-height: 110px; line-height: 1.6; }
+
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .field-row { grid-template-columns: 1fr; } }
+
+  .badge-required {
+    display: inline-block; font-size: 0.68rem; background: #fee2e2; color: #b91c1c;
+    border-radius: 4px; padding: 1px 6px; margin-left: 6px; vertical-align: middle;
+  }
+
+  .theme-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .theme-chip {
+    width: 44px; height: 44px; border-radius: 10px; cursor: pointer;
+    border: 3px solid transparent; transition: border-color 0.2s, transform 0.15s;
+    position: relative;
+  }
+  .theme-chip:hover { transform: scale(1.1); }
+  .theme-chip.selected { border-color: var(--text) !important; }
+  .theme-chip[data-theme="blue"]   { background: linear-gradient(135deg,#1e3a5f,#2563eb); }
+  .theme-chip[data-theme="teal"]   { background: linear-gradient(135deg,#134e4a,#0d9488); }
+  .theme-chip[data-theme="purple"] { background: linear-gradient(135deg,#3b1f6b,#7c3aed); }
+  .theme-chip[data-theme="dark"]   { background: linear-gradient(135deg,#111827,#374151); }
+  .theme-chip[data-theme="rose"]   { background: linear-gradient(135deg,#881337,#e11d48); }
+  .theme-chip[data-theme="amber"]  { background: linear-gradient(135deg,#92400e,#d97706); }
+
+  .concepts-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+  .concept-row { display: flex; gap: 10px; align-items: flex-start; }
+  .concept-row input { flex: 1; }
+  .concept-row input:first-child { max-width: 200px; }
+  .btn-icon {
+    background: none; border: 1.5px solid var(--border); border-radius: 8px;
+    width: 38px; height: 38px; cursor: pointer; font-size: 1rem;
+    color: var(--muted); transition: all 0.2s; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn-icon:hover { border-color: #e11d48; color: #e11d48; background: #fff0f3; }
+  .btn-add {
+    background: none; border: 1.5px dashed var(--border); border-radius: 8px;
+    padding: 10px 16px; font-size: 0.85rem; cursor: pointer; color: var(--accent);
+    font-weight: 600; transition: all 0.2s; margin-top: 6px; width: 100%;
+  }
+  .btn-add:hover { background: var(--accent-light); border-color: var(--accent); }
+
+  /* ─── SLIDE VIEW ─────────────────────────────────────── */
+  #slide-view {
+    position: fixed; inset: 0; background: #1a1a2e;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  #slide-view.hidden { display: none; }
+
+  .slide-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0;
+  }
+  .slide-topbar-left { display: flex; align-items: center; gap: 12px; }
+  .btn-back {
+    background: rgba(255,255,255,0.1); color: #fff; border: none;
+    border-radius: 8px; padding: 8px 16px; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .btn-back:hover { background: rgba(255,255,255,0.2); }
+  .slide-counter { color: rgba(255,255,255,0.6); font-size: 0.85rem; font-weight: 500; }
+  .slide-topic-label { color: rgba(255,255,255,0.4); font-size: 0.8rem; }
+  .btn-print {
+    background: rgba(255,255,255,0.1); color: #fff; border: none;
+    border-radius: 8px; padding: 8px 16px; font-size: 0.85rem; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-print:hover { background: rgba(255,255,255,0.2); }
+
+  .progress-bar-outer { height: 3px; background: rgba(255,255,255,0.1); flex-shrink: 0; }
+  .progress-bar-inner { height: 100%; background: var(--slide-accent, #2563eb); transition: width 0.3s ease; }
+
+  .slide-stage {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 24px; overflow: hidden;
+  }
+
+  .slide-card {
+    width: 100%; max-width: 960px; aspect-ratio: 16/9;
+    border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg);
+    position: relative; background: #fff;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ensure slide card scales down on small screens */
+  @media (max-width: 900px) {
+    .slide-card { aspect-ratio: unset; min-height: 320px; }
+    .slide-stage { padding: 12px; }
+  }
+
+  .slide-nav {
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; padding: 16px 20px; flex-shrink: 0;
+  }
+  .btn-nav {
+    background: rgba(255,255,255,0.12); color: #fff; border: none;
+    border-radius: 10px; padding: 12px 28px; font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+  }
+  .btn-nav:hover { background: rgba(255,255,255,0.22); }
+  .btn-nav:disabled { opacity: 0.25; cursor: default; }
+  .slide-dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 400px; }
+  .slide-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.25);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .slide-dot.active { background: #fff; transform: scale(1.3); }
+
+  /* ─── SLIDE TEMPLATES ───────────────────────────────── */
+
+  /* Title Slide */
+  .slide-title {
+    height: 100%; display: flex; flex-direction: column;
+    background: var(--s-header);
+  }
+  .slide-title-content {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 48px; text-align: center;
+    background: var(--s-header);
+    position: relative; overflow: hidden;
+  }
+  .slide-title-content::before {
+    content: ''; position: absolute; top: -60px; right: -60px;
+    width: 240px; height: 240px; border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+  }
+  .slide-title-content::after {
+    content: ''; position: absolute; bottom: -80px; left: -40px;
+    width: 300px; height: 300px; border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+  .slide-title-badge {
+    background: rgba(255,255,255,0.15); color: #fff;
+    padding: 6px 18px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 24px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .slide-title-h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 900; color: #fff; line-height: 1.1; margin-bottom: 16px; }
+  .slide-title-tagline { font-size: clamp(0.9rem, 2vw, 1.2rem); color: rgba(255,255,255,0.75); max-width: 600px; }
+  .slide-title-footer {
+    padding: 14px 32px; background: rgba(0,0,0,0.25);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .slide-title-footer span { font-size: 0.8rem; color: rgba(255,255,255,0.5); }
+
+  /* Section Header Slide */
+  .slide-section-header {
+    height: 100%; display: flex;
+  }
+  .slide-section-left {
+    width: 40%; background: var(--s-header);
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 40px 36px;
+  }
+  .slide-section-num { font-size: 4rem; font-weight: 900; color: rgba(255,255,255,0.15); line-height: 1; }
+  .slide-section-title { font-size: clamp(1.2rem, 3vw, 1.8rem); font-weight: 800; color: #fff; margin-top: 8px; line-height: 1.2; }
+  .slide-section-right {
+    flex: 1; display: flex; flex-direction: column; justify-content: center;
+    padding: 40px 44px; background: #fff;
+  }
+  .slide-section-right p { font-size: clamp(0.85rem, 1.8vw, 1.05rem); line-height: 1.8; color: #374151; }
+
+  /* Agenda Slide */
+  .slide-agenda { height: 100%; display: flex; flex-direction: column; background: #fff; }
+  .slide-agenda-header {
+    padding: 28px 40px 20px; border-bottom: 3px solid var(--s-accent);
+  }
+  .slide-agenda-header h2 { font-size: 1.6rem; font-weight: 800; color: var(--s-header-color); }
+  .slide-agenda-body { flex: 1; padding: 24px 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
+  .agenda-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+    background: #f8fafc; border-radius: 8px; border-left: 3px solid var(--s-accent);
+  }
+  .agenda-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--s-header); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
+  }
+  .agenda-text { font-size: 0.88rem; font-weight: 600; color: #374151; }
+
+  /* Standard Content Slide */
+  .slide-standard { height: 100%; display: flex; flex-direction: column; background: #fff; }
+  .slide-standard-header {
+    padding: 24px 40px 16px;
+    border-bottom: 3px solid var(--s-accent);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .slide-standard-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--s-header); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .slide-standard-header h2 { font-size: clamp(1.1rem, 2.5vw, 1.5rem); font-weight: 800; color: var(--s-header-color); }
+  .slide-standard-body { flex: 1; padding: 20px 40px; overflow: hidden; }
+  .slide-standard-body p { font-size: clamp(0.82rem, 1.6vw, 1rem); line-height: 1.8; color: #374151; }
+  .bullet-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .bullet-list li {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: clamp(0.8rem, 1.5vw, 0.97rem); color: #374151; line-height: 1.6;
+  }
+  .bullet-list li::before {
+    content: ''; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--s-accent); flex-shrink: 0; margin-top: 6px;
+  }
+  .numbered-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .numbered-list li {
+    display: flex; align-items: flex-start; gap: 12px;
+    font-size: clamp(0.8rem, 1.5vw, 0.95rem); color: #374151; line-height: 1.6;
+  }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--s-header);
+    color: #fff; font-size: 0.75rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+  }
+
+  /* Concepts Grid Slide */
+  .slide-concepts { height: 100%; display: flex; flex-direction: column; background: #fff; }
+  .slide-concepts-header { padding: 22px 40px 14px; border-bottom: 3px solid var(--s-accent); }
+  .slide-concepts-header h2 { font-size: clamp(1.1rem, 2.5vw, 1.5rem); font-weight: 800; color: var(--s-header-color); }
+  .concepts-grid {
+    flex: 1; padding: 18px 32px; display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px; align-content: start; overflow: hidden;
+  }
+  .concept-card {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+    padding: 14px 16px; border-top: 3px solid var(--s-accent);
+  }
+  .concept-card h4 { font-size: 0.85rem; font-weight: 700; color: var(--s-header-color); margin-bottom: 6px; }
+  .concept-card p { font-size: 0.78rem; color: #6b7280; line-height: 1.5; }
+
+  /* Two-Column (Pros/Cons) Slide */
+  .slide-two-col { height: 100%; display: flex; flex-direction: column; background: #fff; }
+  .slide-two-col-header { padding: 22px 40px 14px; border-bottom: 3px solid var(--s-accent); }
+  .slide-two-col-header h2 { font-size: clamp(1.1rem, 2.5vw, 1.5rem); font-weight: 800; color: var(--s-header-color); }
+  .two-col-body { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow: hidden; }
+  .col-panel { padding: 20px 28px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+  .col-panel:first-child { border-right: 1px solid #e2e8f0; }
+  .col-panel-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .col-panel-header span { font-size: 1.2rem; }
+  .col-panel-header h3 { font-size: 0.95rem; font-weight: 700; }
+  .col-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: clamp(0.75rem, 1.4vw, 0.88rem); color: #374151; line-height: 1.5;
+  }
+  .col-item-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .col-pros .col-item-dot { background: #16a34a; }
+  .col-cons .col-item-dot { background: #dc2626; }
+
+  /* Use Cases Slide */
+  .usecase-grid {
+    flex: 1; padding: 18px 32px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px; align-content: start; overflow: hidden;
+  }
+  .usecase-card {
+    background: linear-gradient(135deg, var(--s-header), var(--s-accent));
+    border-radius: 10px; padding: 16px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .usecase-icon { font-size: 1.4rem; }
+  .usecase-text { font-size: 0.82rem; color: rgba(255,255,255,0.9); font-weight: 600; line-height: 1.4; }
+
+  /* Takeaways Slide */
+  .takeaway-list { display: flex; flex-direction: column; gap: 12px; }
+  .takeaway-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    background: #f8fafc; border-radius: 10px; padding: 14px 18px;
+    border-left: 4px solid var(--s-accent);
+  }
+  .takeaway-num {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--s-header);
+    color: #fff; font-weight: 700; font-size: 0.85rem;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .takeaway-text { font-size: clamp(0.8rem, 1.5vw, 0.93rem); color: #374151; line-height: 1.6; }
+
+  /* Closing Slide */
+  .slide-closing {
+    height: 100%; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; background: var(--s-header); text-align: center; padding: 48px;
+    position: relative; overflow: hidden;
+  }
+  .slide-closing::before {
+    content: '?'; position: absolute; font-size: 18rem; font-weight: 900;
+    color: rgba(255,255,255,0.04); line-height: 1;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+  }
+  .slide-closing h2 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; color: #fff; margin-bottom: 16px; }
+  .slide-closing p { font-size: clamp(0.9rem, 2vw, 1.1rem); color: rgba(255,255,255,0.65); max-width: 500px; }
+  .slide-closing-badge {
+    margin-top: 32px; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8);
+    padding: 8px 20px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  /* Slide footer bar */
+  .slide-footer {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 6px; background: var(--s-accent);
+  }
+
+  /* Slide page number */
+  .slide-page-num {
+    position: absolute; bottom: 14px; right: 20px;
+    font-size: 0.7rem; color: #cbd5e1; font-weight: 500;
+  }
+
+  /* ─── THEMES ────────────────────────────────────────── */
+  .theme-blue   { --s-header: #1e3a5f; --s-accent: #2563eb; --s-header-color: #1e3a5f; }
+  .theme-teal   { --s-header: #134e4a; --s-accent: #0d9488; --s-header-color: #134e4a; }
+  .theme-purple { --s-header: #3b1f6b; --s-accent: #7c3aed; --s-header-color: #3b1f6b; }
+  .theme-dark   { --s-header: #111827; --s-accent: #f59e0b; --s-header-color: #111827; }
+  .theme-rose   { --s-header: #881337; --s-accent: #e11d48; --s-header-color: #881337; }
+  .theme-amber  { --s-header: #92400e; --s-accent: #d97706; --s-header-color: #92400e; }
+
+  /* ─── PRINT ─────────────────────────────────────────── */
+  @media print {
+    #form-view { display: none !important; }
+    #slide-view { position: static !important; background: #fff; }
+    .slide-topbar, .slide-nav, .progress-bar-outer, .btn-back { display: none !important; }
+    .slide-stage { padding: 0; }
+    .slide-card { box-shadow: none; border-radius: 0; max-width: 100%; }
+  }
+
+  /* ─── EMPTY STATE ───────────────────────────────────── */
+  .form-intro {
+    text-align: center; padding: 12px 24px 28px;
+    color: var(--muted); font-size: 0.9rem; line-height: 1.7;
+  }
+  .form-intro strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     FORM VIEW
+════════════════════════════════════════════════════════ -->
+<div id="form-view">
+  <header class="app-header">
+    <div>
+      <div class="app-logo">Present<span>IQ</span></div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">Solution Architect Presentation Builder</div>
+    </div>
+    <button class="btn-generate" onclick="generatePresentation()">&#9654; Generate Slides</button>
+  </header>
+
+  <div class="form-intro">
+    Fill in the sections below for your topic. <strong>Only Topic is required</strong> — leave others blank to skip those slides.
+  </div>
+
+  <!-- BASIC INFO -->
+  <div class="form-section" id="sec-basic">
+    <div class="form-section-header" onclick="toggleSection('sec-basic')">
+      <div class="section-title-row">
+        <div class="section-icon">&#9881;</div>
+        <div>
+          <div class="section-label">Basic Info <span class="badge-required">required</span></div>
+          <div class="section-hint">Topic name, tagline, theme</div>
+        </div>
+      </div>
+      <div class="section-chevron">&#x25BE;</div>
+    </div>
+    <div class="form-section-body">
+      <div class="field">
+        <label>Topic Name</label>
+        <input type="text" id="f-topic" placeholder="e.g. Kubernetes, Event-Driven Architecture, API Gateway…" oninput="onTopicInput(this.value)">
+        <div id="kb-banner" style="display:none;margin-top:8px;padding:10px 14px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;font-size:0.83rem;color:#166534;align-items:center;gap:8px;">
+          <span style="font-size:1rem;">✓</span>
+          <span id="kb-banner-text"></span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Tagline / One-liner</label>
+        <input type="text" id="f-tagline" placeholder="e.g. Container orchestration at scale">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Audience Level</label>
+          <select id="f-audience">
+            <option value="Solution Architect">Solution Architect</option>
+            <option value="Developer">Developer</option>
+            <option value="Engineering Manager">Engineering Manager</option>
+            <option value="CTO / Tech Lead">CTO / Tech Lead</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Color Theme</label>
+          <div class="theme-grid" id="theme-grid">
+            <div class="theme-chip selected" data-theme="blue"   onclick="selectTheme(this)" title="Blue"></div>
+            <div class="theme-chip"          data-theme="teal"   onclick="selectTheme(this)" title="Teal"></div>
+            <div class="theme-chip"          data-theme="purple" onclick="selectTheme(this)" title="Purple"></div>
+            <div class="theme-chip"          data-theme="dark"   onclick="selectTheme(this)" title="Dark"></div>
+            <div class="theme-chip"          data-theme="rose"   onclick="selectTheme(this)" title="Rose"></div>
+            <div class="theme-chip"          data-theme="amber"  onclick="selectTheme(this)" title="Amber"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT IS IT -->
+  <div class="form-section" id="sec-what">
+    <div class="form-section-header" onclick="toggleSection('sec-what')">
+      <div class="section-title-row">
+        <div class="section-icon">&#128218;</div>
+        <div>
+          <div class="section-label">What Is It?</div>
+          <div class="section-hint">Definition and simple explanation</div>
+        </div>
+      </div>
+      <div class="section-chevron">&#x25BE;</div>
+    </div>
+    <div class="form-section-body">
+      <div class="field">
+        <label>Definition / Overview</label>
+        <div class="field-hint">Write a clear explanation. Use a simple analogy if helpful.</div>
+        <textarea id="f-what" placeholder="e.g. Kubernetes (K8s) is an open-source system for automating deployment, scaling, and management of containerized applications. Think of it as the operating system for your data center…"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="form-section collapsed" id="sec-why">
+    <div class="form-section-header" onclick="toggleSection('sec-why')">
+      <div class="section-title-row">
+        <div class="section-icon">&#128161;</div>
+        <div>
+          <div class="section-label">Why It Matters</div>
+          <div class="section-hint">Problem it solves, motivation</div>
+        </div>
+      </div>
+      <div class="section-chevron">&#x25BE;</div>
+    </div>
+    <div class="form-section-body">
+      <div class="field">
+        <label>Problem / Context</label>
+        <div class="field-hint">What pain point does this address? Why should a SA care?</div>
+        <textarea id="f-why" placeholder="e.g. Before Kubernetes, teams manually managed servers, deployments were fragile, scaling required downtime, and failures needed manual intervention…"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- CORE CONCEPTS -->
+  <div class="form-section collapsed" id="sec-concepts">
+    <div class="form-section-header" onclick="toggleSection('sec-concepts')">
+      <div class="section-title-row">
+        <div class="section-icon">&#128736;</div>
+        <div>
+          <div class="section-label">Core Concepts</div>
+          <div class="section-hint">Key terms and components</div>
+        </div>
+      </div>
+      <div class="section-chevron">&#x25BE;</div>
+    </div>
+    <div class="form-section-body">
+      <div class="field">
+        <label>Concepts</label>
+        <div class="field-hint">Add each key concept with a short description.</div>
+        <div class="concepts-list" id="concepts-list">
+          <div class="concept-row">
+            <input type="text" placeholder="Term (e.g. Pod)">
+            <input type="text" placeholder="Description (e.g. Smallest deployable unit in K8s)">
+            <button class="btn-icon" onclick="removeConcept(this)" title="Remove">&#10005;</button>
+          </div>
+        </div>
+        <button class="btn-add" onclick="addConcept()">+ Add Concept</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="form-section collapsed" id="sec-how">
+    <div class="form-section-header" onclick="toggleSection('sec-how')">
+      <div class="section-title-row">
+        <div class="section-icon">&#9881;</div>
+        <div>
+          <div class="section-label">How It Works</div>
+          <div class="section-hint">Step-by-step flow or process</div>
+        </div>
+      </div>
+      <div class="section-chevron">&#x25BE;</div>
+    </div>
+    <div class="form-section-body">
+      <div class="field">
+        <label>Steps / Flow</label>
+        <div class="field-hint">One step per line. These become numbered steps on the slide.</div>
+        <textarea id="f-how" placeholder="Developer writes a deployment YAML file&#10;kubectl sends it to the API Server&#10;Scheduler assigns pods to nodes&#10;Kubelet pulls images and starts containers&#10;Services route traffic to healthy pods"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARCHITECTURE PATTERNS -->
+  <div class="form-section collapsed" id="sec-patterns">
+    <div class="form-section-header" onclick="toggleSection('sec-patterns')">
+      <div class="section-title-row">
+        <div class="section-icon">&#128196;</div>
+        <div>
+          <div class="section-label">Architecture Patterns</div>
+          <div class="section-hint">Common patterns, design approaches</div>
+        </div>
+      </div>
+      <div class="section-chevron">&#x25BE;</div>
+    </div>
+    <div class="form-section-body">
+      <div class="field">
+        <label>Patterns / Approaches</label>
+        <div class="field-hint">One pattern per line or a descriptive paragraph.</div>
+        <textarea id="f-patterns" placeholder="Microservices deployment — each service in its own pod&#10;Blue-Green deployments — zero downtime releases&#10;Sidecar pattern — inject auxiliary containers per pod&#10;Namespace-based multi-tenancy — isolate teams/envs"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROS & CONS -->
+  <div class="form-section collapsed" id="sec-tradeoffs">
+    <div class="form-section-header" onclick="toggleSection('sec-tradeoffs')">
+      <div class="section-title-row">
+        <div class="section-icon">&#9878;</div>
+        <div>
+          <div class="section-label">Pros &amp; Cons</div>
+          <div class="section-hint">Trade-offs and limitations</div>
+        </div>
+      </div>
+      <div class="section-chevron">&#x25BE;</div>
+    </div>
+    <div class="form-section-body">
+      <div class="field-row">
+        <div class="field">
+          <label>Advantages</label>
+          <div class="field-hint">One per line</div>
+          <textarea id="f-pros" placeholder="Auto-scaling based on load&#10;Self-healing — restarts failed containers&#10;Portable across cloud providers&#10;Declarative configuration"></textarea>
+        </div>
+        <div class="field">
+          <label>Limitations / Trade-offs</label>
+          <div class="field-hint">One per line</div>
+          <textarea id="f-cons" placeholder="Steep learning curve&#10;Operational overhead for small teams&#10;Networking complexity&#10;Debugging distributed failures is hard"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- USE CASES -->
+  <div class="form-section collapsed" id="sec-usecases">
+    <div class="form-section-header" onclick="toggleSection('sec-usecases')">
+      <div class="section-title-row">
+        <div class="section-icon">&#127919;</div>
+        <div>
+          <div class="section-label">Use Cases</div>
+          <div class="section-hint">Real-world scenarios</div>
+        </div>
+      </div>
+      <div class="section-chevron">&#x25BE;</div>
+    </div>
+    <div class="form-section-body">
+      <div class="field">
+        <label>Use Cases</label>
+        <div class="field-hint">One per line. Short phrases work best for card display.</div>
+        <textarea id="f-usecases" placeholder="Netflix — streaming scale&#10;Airbnb — microservices migration&#10;E-commerce — peak load scaling&#10;CI/CD pipelines&#10;ML model serving"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- KEY TAKEAWAYS -->
+  <div class="form-section collapsed" id="sec-takeaways">
+    <div class="form-section-header" onclick="toggleSection('sec-takeaways')">
+      <div class="section-title-row">
+        <div class="section-icon">&#127942;</div>
+        <div>
+          <div class="section-label">Key Takeaways</div>
+          <div class="section-hint">Summary points for the SA</div>
+        </div>
+      </div>
+      <div class="section-chevron">&#x25BE;</div>
+    </div>
+    <div class="form-section-body">
+      <div class="field">
+        <label>Takeaways</label>
+        <div class="field-hint">One per line — the most important things to remember.</div>
+        <textarea id="f-takeaways" placeholder="K8s is the de facto standard for container orchestration&#10;Always use namespaces to separate environments&#10;RBAC is essential before going to production&#10;Start with managed K8s (EKS/GKE/AKS) to reduce ops burden"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding-top:12px;">
+    <button class="btn-generate" onclick="generatePresentation()" style="padding:14px 48px;font-size:1rem;">
+      &#9654;&nbsp; Generate Presentation
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE VIEW
+════════════════════════════════════════════════════════ -->
+<div id="slide-view" class="hidden">
+  <div class="slide-topbar">
+    <div class="slide-topbar-left">
+      <button class="btn-back" onclick="backToForm()">&#8592; Edit</button>
+      <span class="slide-counter" id="slide-counter">Slide 1 of 1</span>
+    </div>
+    <span class="slide-topic-label" id="slide-topic-label"></span>
+    <button class="btn-print" onclick="window.print()">&#128438; Print / PDF</button>
+  </div>
+
+  <div class="progress-bar-outer">
+    <div class="progress-bar-inner" id="progress-bar" style="width:0%"></div>
+  </div>
+
+  <div class="slide-stage">
+    <div class="slide-card" id="slide-card"></div>
+  </div>
+
+  <div class="slide-nav">
+    <button class="btn-nav" id="btn-prev" onclick="navigate(-1)">&#8592; Prev</button>
+    <div class="slide-dots" id="slide-dots"></div>
+    <button class="btn-nav" id="btn-next" onclick="navigate(1)">Next &#8594;</button>
+  </div>
+</div>
+
+<script>
+// ─── STATE ──────────────────────────────────────────────
+let slides = [];
+let currentSlide = 0;
+let selectedTheme = 'blue';
+
+// ─── TOPIC AUTO-DETECT ──────────────────────────────────
+function onTopicInput(val) {
+  const banner = document.getElementById('kb-banner');
+  const text   = document.getElementById('kb-banner-text');
+  if (!val.trim()) { banner.style.display = 'none'; return; }
+  const kbKey = detectTopic(val.trim());
+  if (kbKey) {
+    const topicLabel = kbKey.split(' ').map(w => w[0].toUpperCase()+w.slice(1)).join(' ');
+    text.textContent = `✓ Knowledge base match: ${topicLabel} — click Generate for a full presentation.`;
+    banner.style.cssText = 'display:flex;margin-top:8px;padding:10px 14px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;font-size:0.83rem;color:#166534;align-items:center;gap:8px;';
+  } else {
+    text.textContent = `Topic not in knowledge base — fill sections below, or click Generate for a topic framework.`;
+    banner.style.cssText = 'display:flex;margin-top:8px;padding:10px 14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;font-size:0.83rem;color:#92400e;align-items:center;gap:8px;';
+  }
+}
+
+// ─── THEME SELECTION ────────────────────────────────────
+function selectTheme(el) {
+  document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedTheme = el.dataset.theme;
+}
+
+// ─── SECTION TOGGLE ─────────────────────────────────────
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+// ─── CONCEPT ROWS ───────────────────────────────────────
+function addConcept() {
+  const list = document.getElementById('concepts-list');
+  const row = document.createElement('div');
+  row.className = 'concept-row';
+  row.innerHTML = `
+    <input type="text" placeholder="Term">
+    <input type="text" placeholder="Description">
+    <button class="btn-icon" onclick="removeConcept(this)" title="Remove">&#10005;</button>
+  `;
+  list.appendChild(row);
+}
+
+function removeConcept(btn) {
+  const list = document.getElementById('concepts-list');
+  if (list.children.length > 1) btn.closest('.concept-row').remove();
+}
+
+// ─── PARSE HELPERS ──────────────────────────────────────
+function lines(text) {
+  return text.split('\n').map(l => l.trim()).filter(Boolean);
+}
+
+function getConcepts() {
+  return [...document.querySelectorAll('#concepts-list .concept-row')].map(row => {
+    const inputs = row.querySelectorAll('input');
+    return { name: inputs[0].value.trim(), desc: inputs[1].value.trim() };
+  }).filter(c => c.name);
+}
+
+// ─── SLIDE BUILDERS ─────────────────────────────────────
+const icons = {
+  what: '📖', why: '💡', concepts: '🔧', how: '⚙️',
+  patterns: '📐', tradeoffs: '⚖️', usecases: '🎯', takeaways: '🏆'
+};
+
+const usecaseIcons = ['🌐','🏢','🚀','⚡','🔁','📊','🛡️','🤖','📱','🧠','🔗','📦'];
+
+function buildTitleSlide(data) {
+  return `
+    <div class="slide-title theme-${data.theme}" style="height:100%">
+      <div class="slide-title-content">
+        <div class="slide-title-badge">${data.audience} Guide</div>
+        <div class="slide-title-h1">${data.topic}</div>
+        ${data.tagline ? `<div class="slide-title-tagline">${data.tagline}</div>` : ''}
+      </div>
+      <div class="slide-title-footer theme-${data.theme}">
+        <span>Solution Architect Learning Path</span>
+        <span>PresentIQ</span>
+      </div>
+    </div>`;
+}
+
+function buildAgendaSlide(data, agendaItems) {
+  const itemsHtml = agendaItems.map((item, i) => `
+    <div class="agenda-item theme-${data.theme}">
+      <div class="agenda-num theme-${data.theme}">${i+1}</div>
+      <div class="agenda-text">${item}</div>
+    </div>`).join('');
+  return `
+    <div class="slide-agenda theme-${data.theme}">
+      <div class="slide-agenda-header theme-${data.theme}">
+        <h2>Agenda</h2>
+      </div>
+      <div class="slide-agenda-body">${itemsHtml}</div>
+      <div class="slide-page-num">${data.topic}</div>
+    </div>`;
+}
+
+function buildSectionSlide(data, num, title, content) {
+  return `
+    <div class="slide-section-header theme-${data.theme}">
+      <div class="slide-section-left theme-${data.theme}">
+        <div class="slide-section-num">${String(num).padStart(2,'0')}</div>
+        <div class="slide-section-title">${title}</div>
+      </div>
+      <div class="slide-section-right">
+        <p>${content.replace(/\n/g,'<br>')}</p>
+      </div>
+    </div>
+    <div class="slide-footer theme-${data.theme}"></div>
+    <div class="slide-page-num">${data.topic}</div>`;
+}
+
+function buildBulletsSlide(data, title, items, icon) {
+  const listHtml = items.map(item => `<li>${item}</li>`).join('');
+  return `
+    <div class="slide-standard theme-${data.theme}">
+      <div class="slide-standard-header theme-${data.theme}">
+        <div class="slide-standard-icon theme-${data.theme}">${icon}</div>
+        <h2>${title}</h2>
+      </div>
+      <div class="slide-standard-body">
+        <ul class="bullet-list theme-${data.theme}">${listHtml}</ul>
+      </div>
+    </div>
+    <div class="slide-footer theme-${data.theme}"></div>
+    <div class="slide-page-num">${data.topic}</div>`;
+}
+
+function buildStepsSlide(data, title, items, icon) {
+  const listHtml = items.map((item, i) => `
+    <li>
+      <div class="step-num theme-${data.theme}">${i+1}</div>
+      <span>${item}</span>
+    </li>`).join('');
+  return `
+    <div class="slide-standard theme-${data.theme}">
+      <div class="slide-standard-header theme-${data.theme}">
+        <div class="slide-standard-icon theme-${data.theme}">${icon}</div>
+        <h2>${title}</h2>
+      </div>
+      <div class="slide-standard-body">
+        <ol class="numbered-list theme-${data.theme}">${listHtml}</ol>
+      </div>
+    </div>
+    <div class="slide-footer theme-${data.theme}"></div>
+    <div class="slide-page-num">${data.topic}</div>`;
+}
+
+function buildConceptsSlide(data, concepts) {
+  const cardsHtml = concepts.map(c => `
+    <div class="concept-card theme-${data.theme}">
+      <h4>${c.name}</h4>
+      ${c.desc ? `<p>${c.desc}</p>` : ''}
+    </div>`).join('');
+  return `
+    <div class="slide-concepts theme-${data.theme}">
+      <div class="slide-concepts-header theme-${data.theme}">
+        <h2>Core Concepts</h2>
+      </div>
+      <div class="concepts-grid">${cardsHtml}</div>
+    </div>
+    <div class="slide-footer theme-${data.theme}"></div>
+    <div class="slide-page-num">${data.topic}</div>`;
+}
+
+function buildProsConsSlide(data, pros, cons) {
+  const prosHtml = pros.map(p => `
+    <div class="col-item">
+      <div class="col-item-dot"></div><span>${p}</span>
+    </div>`).join('');
+  const consHtml = cons.map(c => `
+    <div class="col-item">
+      <div class="col-item-dot"></div><span>${c}</span>
+    </div>`).join('');
+  return `
+    <div class="slide-two-col theme-${data.theme}">
+      <div class="slide-two-col-header theme-${data.theme}">
+        <h2>Trade-offs &amp; Considerations</h2>
+      </div>
+      <div class="two-col-body">
+        <div class="col-panel col-pros">
+          <div class="col-panel-header">
+            <span>✅</span><h3 style="color:#16a34a">Advantages</h3>
+          </div>
+          ${prosHtml}
+        </div>
+        <div class="col-panel col-cons">
+          <div class="col-panel-header">
+            <span>⚠️</span><h3 style="color:#dc2626">Limitations</h3>
+          </div>
+          ${consHtml}
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer theme-${data.theme}"></div>
+    <div class="slide-page-num">${data.topic}</div>`;
+}
+
+function buildUsecasesSlide(data, usecases) {
+  const cardsHtml = usecases.map((uc, i) => `
+    <div class="usecase-card theme-${data.theme}">
+      <div class="usecase-icon">${usecaseIcons[i % usecaseIcons.length]}</div>
+      <div class="usecase-text">${uc}</div>
+    </div>`).join('');
+  return `
+    <div class="slide-standard theme-${data.theme}" style="height:100%;display:flex;flex-direction:column">
+      <div class="slide-standard-header theme-${data.theme}">
+        <div class="slide-standard-icon theme-${data.theme}">🎯</div>
+        <h2>Real-World Use Cases</h2>
+      </div>
+      <div class="usecase-grid">${cardsHtml}</div>
+    </div>
+    <div class="slide-footer theme-${data.theme}"></div>
+    <div class="slide-page-num">${data.topic}</div>`;
+}
+
+function buildTakeawaysSlide(data, takeaways) {
+  const listHtml = takeaways.map((t, i) => `
+    <div class="takeaway-item theme-${data.theme}">
+      <div class="takeaway-num theme-${data.theme}">${i+1}</div>
+      <div class="takeaway-text">${t}</div>
+    </div>`).join('');
+  return `
+    <div class="slide-standard theme-${data.theme}" style="height:100%;display:flex;flex-direction:column">
+      <div class="slide-standard-header theme-${data.theme}">
+        <div class="slide-standard-icon theme-${data.theme}">🏆</div>
+        <h2>Key Takeaways</h2>
+      </div>
+      <div class="slide-standard-body">
+        <div class="takeaway-list">${listHtml}</div>
+      </div>
+    </div>
+    <div class="slide-footer theme-${data.theme}"></div>
+    <div class="slide-page-num">${data.topic}</div>`;
+}
+
+function buildClosingSlide(data) {
+  return `
+    <div class="slide-closing theme-${data.theme}">
+      <h2>Thank You</h2>
+      <p>Any questions about <strong style="color:#fff">${data.topic}</strong>?</p>
+      <div class="slide-closing-badge">Solution Architect Session — PresentIQ</div>
+    </div>`;
+}
+
+// ─── KNOWLEDGE BASE ─────────────────────────────────────
+const KB = {
+  'kubernetes': {
+    tagline: 'Container orchestration at enterprise scale',
+    what: 'Kubernetes (K8s) is an open-source platform that automates deployment, scaling, and management of containerized applications across clusters of machines. Think of it as the operating system for your data center — it abstracts away individual servers and lets you declare what workloads to run, how many replicas to maintain, and how they communicate.',
+    why: 'Before Kubernetes, teams managed servers manually, deployments were fragile, scaling required downtime, and failures demanded human intervention.\n- Inconsistent environments across dev, staging, and production\n- Manual scaling — no way to handle traffic spikes automatically\n- Single points of failure with no self-healing capability\n- Inefficient resource utilization across servers',
+    concepts: [{name:'Pod',desc:'Smallest deployable unit — one or more containers sharing network and storage'},{name:'Node',desc:'A physical or virtual machine that runs pods in the cluster'},{name:'Deployment',desc:'Declarative spec for desired pod state and replica count'},{name:'Service',desc:'Stable network endpoint that exposes pods to other services'},{name:'Namespace',desc:'Virtual cluster for isolating resources by team or environment'},{name:'ConfigMap',desc:'Externalize configuration from container images'},{name:'Ingress',desc:'HTTP routing rules to expose services externally'},{name:'HPA',desc:'Horizontal Pod Autoscaler — scales pods based on CPU/memory metrics'}],
+    how: ['Developer writes a Deployment YAML defining desired state','kubectl submits it to the Kubernetes API Server','Scheduler assigns pods to nodes based on available resources','Kubelet on each node pulls images and starts containers','Services provide stable DNS names and load balance traffic across pods','Controllers continuously reconcile actual state with desired state','HPA monitors metrics and scales pod count automatically'],
+    patterns: ['Sidecar — inject proxy/logging containers alongside the main app','Blue-Green deployment — run two identical environments, switch traffic instantly','Canary release — gradually shift traffic to new version to catch issues early','Namespace-per-environment — isolate dev/staging/prod in one cluster','GitOps with ArgoCD — git repo is the single source of truth for cluster state'],
+    pros: ['Self-healing — automatically restarts failed containers and reschedules on healthy nodes','Auto-scaling — scales pods based on CPU, memory, or custom metrics','Declarative configuration — describe desired state, K8s handles the rest','Cloud-agnostic — runs on AWS, GCP, Azure, or on-premise','Rich ecosystem — Helm, Istio, Prometheus, ArgoCD'],
+    cons: ['Steep learning curve — complex concepts and YAML verbosity','Operational overhead — cluster management, upgrades, and etcd backups','Networking complexity — CNI plugins, DNS, service meshes add layers','Overkill for small teams or simple stateless apps','Stateful workloads like databases are harder to manage than stateless services'],
+    usecases: ['Netflix — global video streaming at scale','Airbnb — microservices platform migration','E-commerce — Black Friday traffic spike handling','CI/CD — ephemeral build and test runners','ML platforms — GPU workload scheduling','Multi-tenant SaaS — namespace-based isolation'],
+    takeaways: ['K8s is the de facto standard for container orchestration at scale','Use managed K8s (EKS, GKE, AKS) to reduce operational burden significantly','Namespaces and RBAC are non-negotiable for production multi-team environments','Not every app needs K8s — evaluate complexity vs benefit for small teams','Invest in observability early: Prometheus + Grafana + distributed tracing'],
+  },
+  'docker': {
+    tagline: 'Build, ship, and run applications anywhere',
+    what: 'Docker is a platform for developing, shipping, and running applications inside lightweight, isolated environments called containers. A container packages your application code together with all its dependencies and configuration — ensuring it runs identically on any machine with Docker installed, eliminating the "works on my machine" problem.',
+    why: 'Traditional deployments suffered from environment inconsistencies, dependency conflicts, and slow provisioning.\n- "Works on my machine" — containers guarantee identical runtime environments\n- Dependency conflicts between applications on shared servers\n- Slow VM provisioning (minutes) vs fast container startup (seconds)\n- Inefficient resource usage — containers share the host OS kernel',
+    concepts: [{name:'Image',desc:'Read-only blueprint — layers of filesystem changes built from a Dockerfile'},{name:'Container',desc:'Running instance of an image — isolated process with its own filesystem'},{name:'Dockerfile',desc:'Instructions to build a Docker image layer by layer'},{name:'Registry',desc:'Storage for Docker images (Docker Hub, ECR, GCR)'},{name:'Volume',desc:'Persistent storage that survives container restarts'},{name:'Network',desc:'Virtual network allowing containers to communicate'},{name:'Docker Compose',desc:'Define and run multi-container apps with a single YAML file'},{name:'Layer',desc:'Immutable filesystem snapshot — reused across images for efficiency'}],
+    how: ['Developer writes a Dockerfile defining base image and build steps','docker build creates an image from the Dockerfile','Image is pushed to a registry for sharing','docker run creates a container from the image with isolated namespace','Containers share the host OS kernel but have isolated processes','Docker Compose orchestrates multi-container apps locally'],
+    patterns: ['Multi-stage builds — separate build and runtime images to minimize final image size','Distroless images — minimal base with no shell, reducing attack surface','One process per container — single responsibility for easier scaling','Environment variables for config — externalize configuration from images','Docker Compose for local dev — mirror production topology locally'],
+    pros: ['Consistent environments — eliminates environment-specific bugs','Fast startup — containers start in seconds vs minutes for VMs','Lightweight — shares host OS kernel, fewer resources than VMs','Portable — runs identically on laptop, CI server, and cloud','Isolation — containers cannot interfere with each other or the host'],
+    cons: ['Security — containers share the kernel; a kernel exploit affects all containers','Persistent storage — managing stateful data adds complexity','Networking — bridge and overlay networks require understanding','Image bloat — poorly written Dockerfiles create unnecessarily large images','Not a VM replacement — containers are processes, not full virtual machines'],
+    usecases: ['Local development environments','CI/CD pipeline build agents','Microservices packaging and deployment','Database isolation in testing','Legacy app containerization','Serverless function runtimes'],
+    takeaways: ['Docker is the foundation of modern cloud-native application delivery','Always use multi-stage builds to minimize image size in production','Never run containers as root — follow principle of least privilege','Use .dockerignore to exclude unnecessary files from build context','Docker alone is not enough at scale — combine with Kubernetes for orchestration'],
+  },
+  'microservices': {
+    tagline: 'Build large systems as small, independent services',
+    what: 'Microservices is an architectural style where an application is built as a collection of small, independently deployable services. Each service owns a specific business capability, runs in its own process, and communicates via well-defined APIs. This contrasts with a monolith where all functionality is packaged and deployed as a single unit.',
+    why: 'Monolithic applications become harder to scale and maintain as they grow.\n- Deployment bottlenecks — one team\'s change requires full app redeployment\n- Scaling inefficiency — must scale the entire monolith for one bottleneck\n- Technology lock-in — forced to use one language/framework for everything\n- Long release cycles — large codebase makes testing and deployment slow',
+    concepts: [{name:'Service',desc:'Independent unit owning a single business capability and its data'},{name:'API Contract',desc:'Well-defined interface (REST/gRPC) between services'},{name:'Service Discovery',desc:'Mechanism for services to find each other dynamically'},{name:'Circuit Breaker',desc:'Stops cascading failures by failing fast when a dependency is down'},{name:'Saga Pattern',desc:'Manages distributed transactions across multiple services'},{name:'API Gateway',desc:'Single entry point that routes requests to appropriate services'},{name:'Event Bus',desc:'Async communication backbone (Kafka, RabbitMQ)'},{name:'Bounded Context',desc:'DDD concept — clear ownership boundary for each service'}],
+    how: ['Identify business capabilities and define bounded contexts (DDD)','Extract each capability into an independent service with its own database','Services communicate via REST/gRPC (sync) or message queues (async)','API Gateway handles routing, auth, and rate limiting at the edge','Each service is independently deployed via its own CI/CD pipeline','Service mesh handles retries, timeouts, and circuit breaking','Centralized observability aggregates logs, metrics, and traces across services'],
+    patterns: ['Database per service — no shared databases, each service owns its data','API Gateway — single entry point for all client requests','Saga — coordinate distributed transactions using events','Strangler Fig — gradually extract services from a monolith','Event Sourcing — persist state as a sequence of events for full audit trail'],
+    pros: ['Independent deployability — update one service without touching others','Technology flexibility — choose the best stack for each service','Targeted scaling — scale only the services under load','Fault isolation — failures in one service don\'t bring down the whole system','Team autonomy — small teams own and operate services end-to-end'],
+    cons: ['Distributed systems complexity — network failures, latency, partial failures','Data consistency — no shared transactions; eventual consistency is hard','Operational overhead — many services to deploy, monitor, and debug','Distributed tracing and debugging is significantly harder','Not suitable for small teams or early-stage products — start with a monolith'],
+    usecases: ['Netflix — 700+ microservices for streaming platform','Amazon — product catalog, payments, recommendations as separate services','Uber — trip, pricing, driver, and notifications services','E-commerce — cart, inventory, orders, payments decoupled','Banking — accounts, loans, notifications independently scalable'],
+    takeaways: ['Don\'t start with microservices — build a well-structured monolith first','Use the Strangler Fig pattern to safely migrate from monolith to services','Each service must own its data — shared databases create tight coupling','Invest heavily in observability before going multi-service in production','Microservices are an organizational pattern as much as a technical one'],
+  },
+  'event-driven architecture': {
+    tagline: 'Build loosely coupled systems through asynchronous events',
+    what: 'Event-Driven Architecture (EDA) is a design paradigm where components communicate by producing and consuming events — immutable records of something that happened. Producers emit events without knowing who will consume them. Consumers react independently. This creates highly decoupled, scalable systems where services don\'t call each other directly.',
+    why: 'Traditional request/response architectures create tight coupling — services must be available simultaneously and failures cascade.\n- Tight coupling requiring synchronous availability between services\n- Cascading failures when downstream services are slow or unavailable\n- Scalability bottlenecks from synchronous call chains\n- No way to replay or audit past system activity',
+    concepts: [{name:'Event',desc:'Immutable record of something that happened (e.g., OrderPlaced)'},{name:'Producer',desc:'Service that emits events when something significant occurs'},{name:'Consumer',desc:'Service that subscribes to and reacts to events'},{name:'Event Broker',desc:'Middleware routing events between producers and consumers (Kafka, SQS)'},{name:'Topic / Queue',desc:'Named channel where events of a specific type are published'},{name:'Consumer Group',desc:'Multiple instances sharing event processing load'},{name:'Dead Letter Queue',desc:'Holds events that failed processing for investigation'},{name:'Event Schema',desc:'Defined structure for events — enables versioning and validation'}],
+    how: ['Service A completes an action and publishes an event to the broker','The event broker persists and distributes the event to subscribed consumers','Service B receives the event and processes it independently','Multiple services can consume the same event for different purposes','Failed events are retried automatically; permanently failed ones go to DLQ','Event consumers can replay historical events from a given offset'],
+    patterns: ['Pub/Sub — producers publish to topics, consumers subscribe independently','Event Sourcing — store state as a sequence of events rather than current state','CQRS — separate read and write models, sync via events','Saga — coordinate multi-step workflows across services via events','Outbox Pattern — reliable event publishing by writing to DB and event log atomically'],
+    pros: ['Loose coupling — producers and consumers are completely independent','High scalability — consumers scale independently based on queue depth','Resilience — if a consumer is down, events queue up and process when it recovers','Auditability — event log provides a full history of all system activity','Extensibility — add new consumers without modifying producers'],
+    cons: ['Eventual consistency — data may be temporarily stale across services','Harder to trace end-to-end flow across async boundaries','Ordering guarantees require careful partition design','Schema evolution — changing event structure can break consumers','Debugging requires distributed tracing across event boundaries'],
+    usecases: ['E-commerce order processing pipeline','Real-time fraud detection','IoT sensor data ingestion','Notification and email delivery systems','Audit logging and compliance','Real-time analytics dashboards'],
+    takeaways: ['Design events as facts about the past — immutable, named in past tense','Define and enforce event schemas early — use a schema registry','The Outbox Pattern is essential for reliable event publishing with DB writes','Always implement dead letter queues for production event consumers','Combine EDA with CQRS for optimal read and write scalability'],
+  },
+  'api gateway': {
+    tagline: 'Single entry point for all client-facing API traffic',
+    what: 'An API Gateway is a server that acts as the single entry point for all client requests to backend services. It handles cross-cutting concerns like authentication, rate limiting, routing, SSL termination, and logging — so individual services don\'t have to. It\'s the traffic cop between clients (web, mobile, third-party) and your internal services.',
+    why: 'Without an API Gateway, every client must know the address of every service, and each service must implement auth and rate limiting independently.\n- Duplicated cross-cutting logic across all services\n- Clients tightly coupled to internal service topology\n- No centralized control over API traffic and security\n- Difficulty managing different API versions simultaneously',
+    concepts: [{name:'Route',desc:'Mapping from a URL pattern to a backend service'},{name:'Middleware',desc:'Pluggable logic (auth, logging, rate limiting) applied to requests'},{name:'Rate Limiting',desc:'Throttle requests per client to protect backend services'},{name:'Authentication',desc:'Verify identity (JWT, API keys, OAuth) at the gateway layer'},{name:'Load Balancing',desc:'Distribute traffic across multiple instances of a service'},{name:'SSL Termination',desc:'Handle HTTPS decryption at the gateway, plain HTTP to backends'},{name:'Request Transform',desc:'Modify request/response headers or body before forwarding'},{name:'Caching',desc:'Cache responses at the gateway to reduce backend load'}],
+    how: ['Client sends a request to the API Gateway\'s public endpoint','Gateway authenticates the request (JWT validation, API key check)','Rate limiting middleware checks if the client is within quota','Router matches the URL to a configured backend service','Gateway forwards the request, optionally transforming headers','Backend processes and responds; gateway returns response to client','Logging and metrics captured for every request without touching services'],
+    patterns: ['Backend for Frontend (BFF) — a separate gateway per client type (mobile, web)','Gateway Aggregation — combine multiple service calls into one response','Gateway Offloading — move shared logic from services to the gateway','Blue-Green via gateway — route traffic between versions with weighted routing','Service mesh + gateway — gateway for north-south, mesh for east-west traffic'],
+    pros: ['Centralized cross-cutting concerns — auth, rate limiting, logging in one place','Client decoupling — clients don\'t know about internal topology changes','Security hardening — single place to enforce policies and block threats','Protocol translation — expose REST externally, use gRPC internally','Unified observability — request logging, tracing, and metrics in one place'],
+    cons: ['Single point of failure — gateway must be highly available and clustered','Latency — adds an extra network hop to every request','Bottleneck — all traffic flows through gateway; must be sized correctly','Configuration complexity — gateway config can become a maintenance burden','Vendor lock-in — switching gateway products requires reconfiguring all routes'],
+    usecases: ['Mobile apps — single endpoint for all backend calls','Third-party API monetization with rate limiting','Microservices topology abstraction from clients','A/B testing via traffic splitting at the edge','Legacy API modernization without changing clients'],
+    takeaways: ['The API Gateway should handle cross-cutting concerns, not business logic','Always deploy the gateway in a highly available, multi-node configuration','Use BFF pattern when mobile and web have very different API needs','Popular choices: AWS API Gateway, Kong, Nginx, Envoy, Azure APIM','Combine with a service mesh for complete traffic control across the system'],
+  },
+  'graphql': {
+    tagline: 'Ask for exactly what you need, nothing more, nothing less',
+    what: 'GraphQL is a query language for APIs that lets clients request exactly the data they need in a single query. Unlike REST where the server defines fixed endpoints and response shapes, GraphQL gives clients full control over the response structure. A single GraphQL endpoint replaces dozens of REST endpoints, reducing over-fetching and under-fetching.',
+    why: 'REST APIs suffer from over-fetching (getting more data than needed) and under-fetching (needing multiple requests for related data).\n- Mobile clients downloading large JSON responses they don\'t fully use\n- Needing 3-5 API calls to assemble data for one screen\n- Versioning hell — REST requires v1/v2/v3 URLs as APIs evolve\n- Frontend teams blocked waiting for backend to add new endpoints',
+    concepts: [{name:'Schema',desc:'Type definitions describing all available data and operations'},{name:'Query',desc:'Read operation — fetch data from the server'},{name:'Mutation',desc:'Write operation — create, update, or delete data'},{name:'Subscription',desc:'Real-time operation — push updates via WebSockets'},{name:'Resolver',desc:'Function that fetches data for a specific field in the schema'},{name:'Type',desc:'Strongly typed object definition (scalar, object, enum, interface)'},{name:'Fragment',desc:'Reusable selection of fields to reduce query duplication'},{name:'DataLoader',desc:'Batches resolver calls to solve the N+1 query problem'}],
+    how: ['Client writes a query specifying exactly the fields it needs','Query is sent as a POST to the single /graphql endpoint','Server parses, validates, and executes the query against the schema','Resolvers for each field fetch data from databases or services','DataLoader batches multiple resolver calls to avoid N+1 DB queries','Server returns JSON matching exactly the shape of the query'],
+    patterns: ['Schema-first design — define the schema as the API contract between teams','Federation — compose multiple GraphQL services into a unified supergraph','DataLoader — batch and cache data fetching to solve the N+1 problem','Persisted queries — send query IDs instead of full text for security','GraphQL as BFF — dedicated layer aggregating multiple REST/gRPC services'],
+    pros: ['Precise data fetching — clients get exactly what they ask for','Single endpoint — replaces dozens of REST endpoints','Strongly typed schema — self-documenting API contract','Introspection — clients discover available types and operations at runtime','Great for complex, interconnected data and relationship-heavy domains'],
+    cons: ['N+1 problem — naive resolvers make O(n) DB calls; requires DataLoader','Caching is harder — REST uses HTTP cache by URL; GraphQL needs custom solutions','Security — flexible queries can be expensive or malicious without limits','Complexity — schema design, resolvers, and federation require expertise','Overkill for simple CRUD APIs — REST is simpler for straightforward use cases'],
+    usecases: ['GitHub API — complex queries across repos, PRs, and users','Shopify storefront — flexible product catalog for different clients','Facebook — origin of GraphQL, powers the News Feed','Mobile apps — minimize bandwidth with precise queries','Multi-platform apps — web, mobile, TV with different data shape needs'],
+    takeaways: ['GraphQL shines when clients have diverse, unpredictable data needs','Always implement query complexity and depth limits to prevent abuse','Use DataLoader to solve the N+1 problem — it\'s non-negotiable in production','Apollo Federation is the standard for composing multiple GraphQL services','REST is still the right choice for simple, cacheable, public APIs'],
+  },
+  'kafka': {
+    tagline: 'Distributed event streaming at massive scale',
+    what: 'Apache Kafka is a distributed event streaming platform designed for high-throughput, fault-tolerant, real-time data pipelines. It works as a durable, ordered, replayable log of events — producers write events to topics, and consumers read them at their own pace. Kafka can handle millions of events per second and retain data for days or years.',
+    why: 'Traditional message queues delete messages after consumption, have limited throughput, and can\'t replay events for new consumers.\n- High-throughput event ingestion at millions of events/second\n- Message persistence and replay for new consumers or backfills\n- Multiple independent consumers reading the same event stream\n- Real-time data pipelines between disparate systems',
+    concepts: [{name:'Topic',desc:'Named, ordered, immutable log of events — Kafka\'s core abstraction'},{name:'Partition',desc:'Topic split into ordered segments across brokers for parallelism'},{name:'Producer',desc:'Client that writes events to topics'},{name:'Consumer',desc:'Client that reads events from topics at its own offset'},{name:'Consumer Group',desc:'Multiple consumers sharing partitions for parallel processing'},{name:'Broker',desc:'A single Kafka server that stores and serves events'},{name:'Offset',desc:'Sequential ID of each event within a partition — enables replay'},{name:'Retention',desc:'How long Kafka keeps events — from hours to indefinitely'}],
+    how: ['Producers publish events to a named topic','Kafka partitions the topic across multiple brokers for scalability','Events are written to disk in order and replicated for fault tolerance','Consumers read events from partitions at their own pace, tracking their offset','Consumer groups distribute partitions across instances for parallel processing','New consumers can replay all events from the beginning or any offset'],
+    patterns: ['Fan-out — one producer, many independent consumers for different purposes','Log compaction — keep only the latest value per key (change data capture)','CQRS + Event Sourcing — Kafka as the durable event store','Kafka Streams — real-time stream processing and aggregations within Kafka','Dead Letter Topic — route failed events for separate error handling'],
+    pros: ['Extreme throughput — handles millions of events per second per cluster','Durability — events persisted on disk and replicated across brokers','Replayability — consumers can re-read historical events at any time','Decoupling — producers don\'t know or care about consumers','Scalable — add partitions and brokers horizontally without downtime'],
+    cons: ['Operational complexity — broker management and partition tuning required','Exactly-once semantics require careful configuration and idempotent consumers','Not ideal for low-latency request/response — use gRPC/REST instead','Message ordering guaranteed only within a partition, not across partitions','Overkill for simple task queues — consider RabbitMQ or SQS instead'],
+    usecases: ['LinkedIn — user activity tracking (Kafka\'s origin)','Uber — real-time location and trip event streaming','Financial services — real-time fraud detection pipelines','CDC — sync databases to data warehouses','IoT — sensor data ingestion at massive scale','Microservices event bus — async inter-service communication'],
+    takeaways: ['Kafka is right when you need durability, replay, and high throughput','Partition count determines max parallelism — plan carefully before creation','Use Confluent Schema Registry to enforce and evolve event schemas safely','Managed Kafka (Confluent, MSK, Aiven) dramatically reduces operational burden','For simple task queues, Kafka is heavyweight — evaluate SQS or RabbitMQ first'],
+  },
+  'redis': {
+    tagline: 'In-memory data store for speed-critical operations',
+    what: 'Redis is an open-source, in-memory data structure store used as a cache, database, message broker, and streaming engine. It stores data in RAM for microsecond-level response times and supports rich data structures — strings, hashes, lists, sets, sorted sets, and streams. It\'s the go-to tool for any use case requiring sub-millisecond latency.',
+    why: 'Relational databases have millisecond-level latency — too slow for caching, real-time leaderboards, and session management at scale.\n- Slow database queries under high concurrent user load\n- Session state management across multiple application servers\n- Rate limiting and throttling at high throughput\n- Real-time features like leaderboards, chat, and pub/sub notifications',
+    concepts: [{name:'String',desc:'Simple key-value — counters, session tokens, cached JSON'},{name:'Hash',desc:'Field-value pairs within one key — ideal for user/session objects'},{name:'List',desc:'Ordered collection — task queues, activity feeds, chat history'},{name:'Set',desc:'Unordered unique values — tags, unique visitors, friend lists'},{name:'Sorted Set',desc:'Values with scores — leaderboards, priority queues'},{name:'Pub/Sub',desc:'Real-time messaging channel between publishers and subscribers'},{name:'TTL',desc:'Time-to-live — automatically expire keys after a set duration'},{name:'Pipeline',desc:'Batch multiple commands to reduce round trips'}],
+    how: ['Application connects to Redis via a client library (ioredis, redis-py)','READ: Check Redis for cached data — return immediately on cache hit','On cache miss, fetch from the database and write to Redis with TTL','WRITE: Update the database and invalidate or update the Redis cache','Redis persists data via RDB snapshots or AOF log for durability','Redis Sentinel or Cluster provides high availability and horizontal scaling'],
+    patterns: ['Cache-Aside (Lazy Loading) — app checks cache first, loads from DB on miss','Write-Through — write to cache and DB simultaneously on every write','Session Store — centralized sessions across multiple app servers','Distributed Lock — use SETNX + TTL to coordinate across service instances','Rate Limiting — sliding window counters using sorted sets or atomic increments'],
+    pros: ['Microsecond latency — 100-1000x faster than disk-based databases','Rich data structures — sorted sets, streams, geospatial beyond simple strings','Atomic operations — counters and set operations safe under concurrency','Versatile — cache, queue, pub/sub, rate limiter, session store in one','High throughput — hundreds of thousands of operations per second on one node'],
+    cons: ['Memory cost — all data must fit in RAM; expensive for large datasets','Data persistence trade-offs — durability vs performance requires tuning','Single-threaded command execution — one slow command blocks all others','Not a primary database — unsuitable for complex queries or joins','Cluster complexity — Redis Cluster requires careful key distribution design'],
+    usecases: ['Twitter — timeline and social graph caching','Gaming leaderboards with sorted sets','Rate limiting API endpoints','Real-time chat and notifications via pub/sub','Distributed session management across app servers','Celery / background job queue backend'],
+    takeaways: ['Redis is the standard solution for caching, sessions, and rate limiting','Always set TTLs on cached keys — unbounded caches cause memory exhaustion','Use Redis Cluster for datasets larger than a single node\'s RAM','Keep values small — avoid storing large objects in Redis','Use managed Redis (ElastiCache, Upstash, Redis Cloud) to reduce ops burden'],
+  },
+  'terraform': {
+    tagline: 'Infrastructure as Code for any cloud provider',
+    what: 'Terraform is an open-source Infrastructure as Code (IaC) tool that lets you define, provision, and manage cloud infrastructure using a declarative configuration language (HCL). You describe the desired state — VMs, networks, databases, IAM roles — and Terraform figures out what to create, update, or destroy to reach that state across any cloud provider.',
+    why: 'Manually clicking through cloud consoles is slow, error-prone, and impossible to audit or reproduce at scale.\n- Snowflake servers — manually configured infrastructure no one can reproduce\n- Drift — actual infrastructure diverging from intended state over time\n- Multi-cloud complexity — different tools for each cloud provider\n- No audit trail for infrastructure changes and compliance',
+    concepts: [{name:'Provider',desc:'Plugin connecting Terraform to AWS, GCP, Azure, or any API'},{name:'Resource',desc:'A single infrastructure object (EC2 instance, S3 bucket, RDS)'},{name:'State',desc:'Terraform\'s record of managed infrastructure — stored in .tfstate'},{name:'Module',desc:'Reusable, encapsulated group of resources (e.g., a VPC module)'},{name:'Plan',desc:'Preview of changes Terraform will make before applying them'},{name:'Apply',desc:'Execute the plan and make actual changes to infrastructure'},{name:'Variables',desc:'Input parameters to make configurations reusable across environments'},{name:'Output',desc:'Values exported from a module (e.g., load balancer DNS name)'}],
+    how: ['Write HCL configuration files describing desired infrastructure resources','Run terraform init to download providers and initialize working directory','Run terraform plan to preview changes — no actual changes yet','Review the plan output — additions, modifications, and destructions','Run terraform apply to provision or update the infrastructure','Terraform updates the state file to track what it manages','Changes to config trigger plan+apply — Terraform calculates the diff'],
+    patterns: ['Remote state — store state in S3 + DynamoDB locking for team collaboration','Module composition — build reusable modules for VPC, EKS, RDS, IAM','Workspace-per-environment — separate workspaces for dev/staging/prod','Atlantis / Terraform Cloud — automated plan+apply in CI/CD on pull requests','Terragrunt — DRY wrapper for managing many Terraform modules'],
+    pros: ['Multi-cloud — single tool works across AWS, GCP, Azure, and 300+ providers','Idempotent — run apply 100 times, infrastructure stays in desired state','Declarative — describe what you want, not how to achieve it','Drift detection — terraform plan shows what changed outside Terraform','Version-controlled infrastructure — treat infra changes like code changes'],
+    cons: ['State management — state file is critical and must be secured and backed up','Blast radius — a bad apply can destroy production infrastructure','Provider lag — new cloud features take time to appear in providers','Steep learning curve — HCL, state, and module design require practice','Not great for dynamic workloads — Kubernetes workloads belong in Helm'],
+    usecases: ['Multi-cloud infrastructure provisioning','Repeatable environment creation (dev/staging/prod)','Disaster recovery infrastructure recreation','Compliance-as-code audit trails','Self-service developer environment provisioning','Kubernetes cluster provisioning (EKS, GKE, AKS)'],
+    takeaways: ['Always store state remotely (S3 + DynamoDB) — never commit .tfstate to git','Use modules to create reusable, tested infrastructure building blocks','Run terraform plan in CI/CD on every pull request before merging','Separate state files per environment — never share prod and staging state','Terraform is for infrastructure; Helm/K8s manifests are for app workloads'],
+  },
+  'serverless': {
+    tagline: 'Run code without managing servers',
+    what: 'Serverless computing lets you run application code without provisioning or managing servers. You upload functions, define triggers (HTTP, event, schedule), and the cloud provider handles all execution, scaling, and infrastructure. You pay only for the compute time your code actually uses, down to milliseconds. AWS Lambda, Azure Functions, and Google Cloud Functions are the leading platforms.',
+    why: 'Traditional server management requires provisioning, patching, scaling, and paying for idle capacity 24/7.\n- Paying for servers running at 5% CPU all day long\n- Manual scaling for unpredictable or spiky traffic patterns\n- Server patching and OS maintenance overhead\n- Long time-to-value for simple event-driven use cases',
+    concepts: [{name:'Function',desc:'Single-purpose code unit that runs in response to a trigger'},{name:'Trigger',desc:'Event that invokes a function (HTTP, S3 upload, schedule, SQS)'},{name:'Cold Start',desc:'Latency when a function starts for the first time after being idle'},{name:'Execution Context',desc:'Temporary container the provider creates to run your function'},{name:'Concurrency',desc:'Number of function instances running simultaneously'},{name:'IAM Role',desc:'Permissions granted to the function to access other services'},{name:'Layers',desc:'Shared code or dependencies packaged separately from functions'},{name:'Event Source',desc:'Services that trigger functions (API Gateway, SQS, S3, CloudWatch)'}],
+    how: ['Developer writes a function with a handler method as the entry point','Function is packaged and deployed to the serverless platform','A trigger event occurs (HTTP request, file upload, scheduled time)','The platform provisions an execution context and invokes the function','Function executes, accesses services via SDK, and returns a response','Platform scales to zero after inactivity; cold starts occur on next invocation','You pay only for the duration of each function invocation (ms billing)'],
+    patterns: ['API Backend — Lambda + API Gateway for HTTP-triggered REST APIs','Event Processing — trigger Lambda from SQS, SNS, S3, DynamoDB Streams','Scheduled Jobs — CloudWatch Events to run functions on cron schedules','Fan-out — SNS → multiple Lambda functions for parallel processing','Choreography — chain functions together via events, not direct calls'],
+    pros: ['No server management — zero infrastructure to provision or patch','Automatic scaling — scales from 0 to thousands of concurrent executions','Pay-per-use — no cost when not in use; millisecond billing','Fast time-to-market — focus on business logic, not infrastructure','Built-in HA — provider handles multi-AZ redundancy automatically'],
+    cons: ['Cold starts — first invocation after idle period adds latency (100ms–2s)','Execution limits — max 15 min on AWS Lambda; not for long-running tasks','Vendor lock-in — function triggers tie you to the provider\'s ecosystem','Local development is complex — hard to reproduce cloud triggers locally','Debugging distributed serverless flows is significantly harder'],
+    usecases: ['REST API backends with variable traffic','Image and video processing on upload','Scheduled ETL and batch jobs','Real-time stream processing (Kinesis, SQS)','Webhook receivers and event processors','Chatbots and voice assistant backends'],
+    takeaways: ['Serverless is ideal for event-driven, short-running, variable-load workloads','Use provisioned concurrency to eliminate cold starts for latency-sensitive APIs','Keep functions small and focused — one function, one responsibility','Not suitable for long-running processes, stateful operations, or steady high load','Combine with containers (Fargate) for workloads that don\'t fit FaaS constraints'],
+  },
+  'cicd': {
+    tagline: 'Automate the path from code commit to production',
+    what: 'CI/CD stands for Continuous Integration and Continuous Delivery (or Deployment). CI automatically builds and tests code every time a developer pushes a change. CD automatically delivers validated code to production or staging. Together they form an automated assembly line that turns code commits into running software safely and quickly.',
+    why: 'Manual builds and deployments are slow, error-prone, and don\'t scale with team size.\n- Infrequent, risky "big bang" deployments bundling many untested changes\n- "Integration hell" — merging months of parallel development causes conflicts\n- Long feedback loops — developers wait hours to know if code works\n- Inconsistent deployment processes between team members',
+    concepts: [{name:'Pipeline',desc:'Automated sequence of stages: build → test → deploy'},{name:'Stage',desc:'A logical phase in the pipeline (lint, test, build, deploy)'},{name:'Artifact',desc:'Compiled output (Docker image, binary) produced by the build stage'},{name:'Trigger',desc:'Event that starts a pipeline (git push, PR, tag, schedule)'},{name:'Environment',desc:'Target deployment: dev, staging, production'},{name:'Approval Gate',desc:'Manual or automated check before promoting to next environment'},{name:'Rollback',desc:'Automated revert to previous version when deploy metrics degrade'},{name:'Test Coverage',desc:'Percentage of code exercised by automated tests'}],
+    how: ['Developer pushes code to a feature branch or opens a pull request','CI pipeline triggers: installs dependencies, compiles code','Automated tests run: unit, integration, and security scans','On pass, a Docker image or binary artifact is built and tagged','Artifact is deployed to staging environment automatically','Integration/smoke tests validate the staging deployment','After approval (manual or automated), CD deploys to production','Metrics monitored post-deploy; rollback triggered on anomaly'],
+    patterns: ['Trunk-based development — all developers commit frequently to main','GitOps — git repo is source of truth; changes trigger deployments','Blue-Green via pipeline — deploy to green, shift traffic, keep blue for rollback','Progressive delivery — automated canary releases with metric-based promotion','Shift-left testing — security and integration tests earlier in the pipeline'],
+    pros: ['Fast feedback — know within minutes if a change breaks something','Reduced risk — small, frequent releases are easier to debug and roll back','Consistency — every deployment follows the same automated, auditable process','Developer confidence — automated tests act as a safety net for refactoring','Team velocity — less time on manual deployments, more on feature development'],
+    cons: ['Initial investment — setting up pipelines and test suites takes significant time','Flaky tests — unreliable tests erode trust in the pipeline','Security — CI systems have broad access and are high-value attack targets','Pipeline maintenance — as codebase grows, pipelines need ongoing care','Cultural change — CI/CD requires a shift in how teams think about releases'],
+    usecases: ['SaaS products deploying multiple times per day','Mobile backend APIs with rapid iteration cycles','Infrastructure changes via Terraform in automated pipelines','Database migrations with automated rollback','Multi-region deployments with progressive rollouts'],
+    takeaways: ['Deployment frequency is a health metric — more frequent = lower risk per deploy','Trunk-based development with feature flags is faster than long-lived branches','Your pipeline is only as good as your test suite — invest in test quality first','Everything in the pipeline must be version-controlled — pipeline as code','DORA metrics (deploy frequency, lead time, change failure rate, MTTR) measure maturity'],
+  },
+  'service mesh': {
+    tagline: 'Manage microservices networking without touching application code',
+    what: 'A service mesh is a dedicated infrastructure layer that handles service-to-service communication within a microservices architecture. It uses a sidecar proxy (like Envoy) injected alongside each service to manage traffic, implement mutual TLS, handle retries, collect telemetry, and enforce policies — all without changing application code. Istio and Linkerd are the leading implementations.',
+    why: 'In microservices, each service needs retries, timeouts, mTLS, and tracing — implementing these in every service leads to inconsistency and massive duplication.\n- Duplicated networking logic across dozens of services in different languages\n- Insecure service-to-service communication without mTLS\n- No visibility into inter-service traffic without adding code instrumentation\n- Inconsistent retry and circuit breaker behavior across the fleet',
+    concepts: [{name:'Sidecar Proxy',desc:'Envoy proxy injected alongside each service, intercepts all traffic'},{name:'Control Plane',desc:'Centralized component (Istiod) that configures all sidecar proxies'},{name:'Data Plane',desc:'All the sidecar proxies in the mesh that carry actual traffic'},{name:'mTLS',desc:'Mutual TLS — both sides authenticate; encrypts all inter-service traffic'},{name:'Traffic Policy',desc:'Rules for retries, timeouts, circuit breaking, and load balancing'},{name:'VirtualService',desc:'Istio CRD defining routing rules for a service'},{name:'DestinationRule',desc:'Istio CRD defining connection pool and mTLS settings'},{name:'Telemetry',desc:'Automatic metrics, logs, and traces from every sidecar proxy'}],
+    how: ['Istio control plane is installed in the Kubernetes cluster','Sidecar proxy (Envoy) is auto-injected into every application pod','All inbound and outbound traffic flows through the sidecar','Control plane pushes routing rules, mTLS certs, and policies to all sidecars','Sidecars enforce policies (retries, timeouts, circuit breaking) transparently','Telemetry is automatically collected and sent to Prometheus/Jaeger','Operators apply VirtualService/DestinationRule CRDs to manage traffic'],
+    patterns: ['mTLS everywhere — enforce mutual TLS for all service-to-service communication','Canary deployment — split traffic by percentage between service versions','Circuit breaker — auto-eject unhealthy endpoints from load balancing pool','Retry with exponential backoff — automatic retries on transient failures','Zero-trust networking — no implicit trust between services; everything authenticated'],
+    pros: ['Language-agnostic — networking logic managed at proxy level for all services','Observability out of the box — automatic metrics, traces, and access logs','Security — mTLS with zero-trust model without any code changes','Traffic management — A/B testing and canary releases without code changes','Policy enforcement — rate limits and auth policies applied uniformly'],
+    cons: ['Operational complexity — Istio is notoriously complex to install and upgrade','Resource overhead — every sidecar consumes CPU and memory; significant at scale','Debugging — extra proxy layer makes network issue debugging harder','Latency — sidecar adds a small but measurable hop to every request','Steep learning curve — many CRDs, concepts, and failure modes to understand'],
+    usecases: ['Large microservices fleets needing consistent observability','Zero-trust security model for regulated industries','Progressive delivery with fine-grained traffic splitting','Multi-cluster networking and service discovery','Service-level authorization policies without code changes'],
+    takeaways: ['Only adopt a service mesh when you have 10+ microservices — it\'s heavyweight','Linkerd is a simpler, lighter alternative to Istio for teams without platform teams','mTLS is the biggest security win a service mesh provides — prioritize it','The observability benefits alone often justify adoption for complex systems','Ambient mesh (Istio\'s sidecar-less mode) reduces resource overhead significantly'],
+  },
+  'cqrs': {
+    tagline: 'Separate reads and writes for independent scalability',
+    what: 'CQRS (Command Query Responsibility Segregation) separates the write model (Commands) from the read model (Queries). Commands change state; queries read state — from separate data models optimized for each purpose. This allows reads and writes to scale, evolve, and be optimized independently. CQRS pairs naturally with Event Sourcing.',
+    why: 'In traditional CRUD, the same data model serves both reads and writes — leading to compromises in performance and scalability.\n- Normalized write model is slow for complex read queries\n- Reads are 10-100x more frequent than writes but can\'t scale independently\n- Complex domain models corrupted by query concerns polluting write logic\n- Inability to have multiple optimized read projections for different use cases',
+    concepts: [{name:'Command',desc:'Intent to change state — validated and processed by the write side'},{name:'Query',desc:'Request for data — served by the read model, cannot modify state'},{name:'Write Model',desc:'Normalized model focused on data integrity and business rules'},{name:'Read Model',desc:'Denormalized projection optimized for specific query patterns'},{name:'Projection',desc:'Derived view built by consuming events from the write side'},{name:'Event',desc:'Record of a state change — bridges the write and read sides'},{name:'Command Handler',desc:'Processes commands, applies business rules, persists to write store'},{name:'Event Handler',desc:'Updates read model projections in response to events'}],
+    how: ['Client issues a Command (e.g., PlaceOrder) to the command handler','Command handler validates business rules and updates the write store','A domain event (OrderPlaced) is emitted to the event bus','Event handlers consume the event and update multiple read model projections','Client issues a Query served directly from the optimized read model','Read model is eventually consistent with the write model'],
+    patterns: ['CQRS + Event Sourcing — write side stores events; read side builds projections','Multiple read models — different projections for search, reports, and UI','Async projection updates — event handlers update read models asynchronously','Snapshot pattern — periodically snapshot aggregate state to avoid full event replay','Saga + CQRS — multi-step business processes via commands and events'],
+    pros: ['Independent scaling — read and write sides scale based on their own load','Optimized data models — reads use denormalized views; writes use domain models','Multiple projections — build different read models from the same events','Event audit trail — especially powerful when combined with Event Sourcing','Clean domain model — write side free from query concerns'],
+    cons: ['Eventual consistency — reads may lag behind writes; not for all use cases','Complexity — two data models, event infrastructure, and projection maintenance','Overkill for simple CRUD — adds significant overhead for basic use cases','Data synchronization bugs — projections can get out of sync and need rebuilding','Harder to reason about consistency lag in the system'],
+    usecases: ['E-commerce — order write model separate from product catalog read models','Banking — account transactions (commands) and balance projections (queries)','Social media — post/follow commands, timeline and notification read models','Analytics dashboards — write operational events, project into aggregate views','Inventory management — stock adjustments vs availability projections'],
+    takeaways: ['CQRS is not for every app — evaluate whether complexity justifies the benefits','Start with a single database and extract read models when scaling is a real problem','Pair CQRS with Event Sourcing for a full audit trail and replayable projections','Eventual consistency must be acceptable to stakeholders before adopting CQRS','Design projection rebuilding (replaying all events) into your architecture from day one'],
+  },
+  'oauth2': {
+    tagline: 'Secure delegated authorization for modern applications',
+    what: 'OAuth 2.0 is an authorization framework enabling applications to obtain limited access to user accounts without exposing passwords. OpenID Connect (OIDC) builds on OAuth 2.0 and adds authentication (identity). Together they are the foundation of SSO, social login, and API security. JWT (JSON Web Tokens) carry OAuth2/OIDC claims and are validated locally without hitting the auth server.',
+    why: 'Sharing passwords between applications is insecure and unmanageable at scale.\n- Users sharing passwords with third-party apps — credential theft risk\n- No way to limit what a third-party can access or for how long\n- No standard way to revoke access without changing the user\'s password\n- Fragmented identity across services requiring separate logins',
+    concepts: [{name:'Access Token',desc:'Short-lived credential proving authorization to access a resource'},{name:'Refresh Token',desc:'Long-lived token to obtain new access tokens without re-login'},{name:'Authorization Code',desc:'Short-lived code exchanged for tokens — most secure flow'},{name:'Client',desc:'Application requesting access on behalf of a user'},{name:'Authorization Server',desc:'Issues tokens after verifying identity (Auth0, Okta, Cognito, Keycloak)'},{name:'Resource Server',desc:'API that validates access tokens and serves protected resources'},{name:'Scope',desc:'Permission strings defining what the token grants access to'},{name:'JWT',desc:'Self-contained signed token carrying claims — verifiable without a DB call'}],
+    how: ['User clicks "Login with Google" (Authorization Code Flow)','App redirects to Authorization Server with client_id and requested scopes','User authenticates and consents to the requested scopes','Authorization Server redirects back with a short-lived authorization code','App exchanges the code + client secret for access token and refresh token','App uses the access token in the Authorization header for API calls','Resource Server validates JWT signature and claims on each request','When access token expires, refresh token silently obtains a new one'],
+    patterns: ['Authorization Code + PKCE — most secure flow for SPAs and mobile apps','Client Credentials — service-to-service auth without user context','Token rotation — invalidate refresh tokens on use to detect theft','OIDC for identity + OAuth2 for authorization — combine for full auth solution','Token introspection vs JWT — remote validation vs local signature verification'],
+    pros: ['No password sharing — users never give passwords to third-party apps','Granular scopes — limit exactly what access a token grants','Revocable — access revoked per-app without changing passwords','Standard — implemented by every major identity provider; portable','JWT self-contained — resource servers validate tokens locally without auth server'],
+    cons: ['Complexity — multiple flows, token types, and edge cases to understand','Security pitfalls — misconfigured redirect URIs and CSRF attacks are common','Token leakage — JWTs are bearer tokens; anyone with the token can use it','Short expiry vs UX — short access tokens are more secure but need refresh handling','Stateless JWT can\'t be revoked before expiry without a token blocklist'],
+    usecases: ['Social login — Login with Google, GitHub, Apple','Enterprise SSO — single login for all internal tools','Mobile app authentication with secure token-based auth','Third-party API integrations — GitHub, Stripe, Salesforce','Service-to-service auth in microservices (Client Credentials flow)'],
+    takeaways: ['Always use Authorization Code + PKCE for user-facing apps — never Implicit flow','Never store access tokens in localStorage — use httpOnly cookies or memory','Use a managed identity provider (Auth0, Okta, Cognito) rather than rolling your own','JWTs should have short expiry (15 min) paired with refresh token rotation','Validate ALL JWT claims on the resource server: signature, expiry, audience, issuer'],
+  },
+  'load balancing': {
+    tagline: 'Distribute traffic across servers for scalability and reliability',
+    what: 'Load balancing distributes incoming network traffic across multiple servers so no single server is overwhelmed. A load balancer sits in front of your servers, accepts all incoming requests, and routes each one to a backend instance based on a configured algorithm. It also performs health checks and automatically removes unhealthy servers from the pool.',
+    why: 'A single server has finite capacity and represents a single point of failure.\n- Single points of failure — one server going down kills the entire service\n- Horizontal scaling limits — no way to handle more traffic than one machine\n- Uneven resource utilization — some servers idle while others are overloaded\n- No zero-downtime deployments without traffic distribution',
+    concepts: [{name:'Round Robin',desc:'Distributes requests sequentially across servers — simple and fair'},{name:'Least Connections',desc:'Routes to the server with the fewest active connections'},{name:'Weighted Round Robin',desc:'Assigns more requests to more powerful servers'},{name:'Health Check',desc:'Periodic probe to verify a backend server is alive and responding'},{name:'Sticky Sessions',desc:'Routes the same user to the same server — needed for stateful apps'},{name:'Layer 4 LB',desc:'Operates at TCP/UDP level — fast but no HTTP awareness'},{name:'Layer 7 LB',desc:'Operates at HTTP level — can route by URL, headers, or content'},{name:'SSL Termination',desc:'Decrypts HTTPS at the LB; plain HTTP to backends'}],
+    how: ['DNS resolves your domain to the load balancer\'s IP address','Client establishes a connection to the load balancer','LB selects a backend server using the configured algorithm','Request is forwarded to the selected backend server','Backend processes and returns a response to the LB','LB forwards the response back to the client','Health checks run in the background; unhealthy servers removed from pool'],
+    patterns: ['Global Load Balancing — route users to nearest data center via DNS or Anycast','Layer 7 routing — route /api to API servers, /static to CDN origin','Active-Active — multiple LBs running simultaneously for high availability','Connection draining — gracefully remove a server while finishing in-flight requests','Blue-Green via LB — switch all traffic between versions at the load balancer'],
+    pros: ['High availability — unhealthy servers removed from rotation automatically','Horizontal scalability — add more servers to handle more traffic','SSL termination — centralize certificate management at the LB','Observability — centralized access logs and metrics for all traffic','Zero-downtime deploys — drain one server at a time during rolling updates'],
+    cons: ['LB itself is a potential SPOF — must deploy multiple LBs for true HA','Sticky sessions complicate stateless architecture and limit flexibility','SSL termination moves trust boundary — traffic unencrypted between LB and backends','Configuration complexity — health check tuning and algorithm selection','Connection state terminates at LB, not end-to-end'],
+    usecases: ['Web application traffic distribution across app servers','Global traffic management across regions','Zero-downtime rolling deployments','API gateway traffic distribution','Database read replica load distribution'],
+    takeaways: ['Use Layer 7 for HTTP services — you get URL routing, header inspection, and more','Configure health checks carefully — too aggressive causes false positives','Avoid sticky sessions — design stateless services with external session stores','AWS ALB, GCP Cloud Load Balancer, and Nginx are the most common choices','Pair load balancing with auto-scaling groups for true elasticity'],
+  },
+  'cdn': {
+    tagline: 'Deliver content from servers closest to your users',
+    what: 'A Content Delivery Network (CDN) is a globally distributed network of servers (edge nodes) that cache and serve content to users from the nearest location. Instead of all users hitting your origin server in one data center, they receive content from an edge server potentially 5ms away instead of 200ms. CDNs serve static assets, cache API responses, and protect origins from traffic spikes.',
+    why: 'A single-origin server is physically far from most users and can be overwhelmed by traffic.\n- High latency for users geographically far from your data center\n- Origin server overload from static asset requests\n- DDoS vulnerability — single origin is easy to attack and flood\n- Slow page load times hurting SEO rankings and conversion rates',
+    concepts: [{name:'Edge Node (PoP)',desc:'CDN server at a Point of Presence near end users'},{name:'Cache Hit',desc:'Content served from edge cache — no origin request needed'},{name:'Cache Miss',desc:'Edge fetches from origin, caches it, then serves'},{name:'TTL',desc:'Time-to-Live — how long an edge caches content before revalidating'},{name:'Cache Invalidation',desc:'Purge cached content when it changes at the origin'},{name:'Cache-Control',desc:'HTTP header controlling caching behavior at CDN and browsers'},{name:'Origin Shield',desc:'Intermediate cache layer between edge and origin to reduce origin hits'},{name:'Edge Functions',desc:'Run code at the edge (Cloudflare Workers) without a round-trip to origin'}],
+    how: ['User requests a resource (image, JS, API response)','DNS resolves to the nearest CDN edge node via Anycast or GeoDNS','Edge node checks if the content is in its cache (cache hit)','On cache miss, edge node fetches from origin and caches the response','Subsequent requests from the same region are served from edge cache','When content changes, publisher purges the CDN cache via API'],
+    patterns: ['Static asset CDN — serve JS, CSS, images with hash-based filenames for infinite TTL','API caching — cache read-heavy API responses at the edge with short TTLs','Origin shield — route all cache misses through one shield node before origin','Edge functions — run auth, redirects, A/B testing at edge without origin round-trips','Multi-CDN — use two providers for redundancy and automatic failover'],
+    pros: ['Dramatically lower latency — serve content from 5ms away instead of 200ms','Origin offload — 80-90% of requests served from cache, protecting origin','DDoS protection — CDN absorbs attack traffic at the edge before it reaches origin','Global availability — CDN is inherently multi-region and highly available','Cost reduction — less bandwidth from origin lowers compute and transfer costs'],
+    cons: ['Cache invalidation complexity — stale content served if not purged correctly','Debugging — harder to trace issues through CDN layers; caching masks bugs','Personalized content — hard to cache; dynamic content bypasses CDN','Cost at extreme scale — egress costs significant for video and large assets','Vendor lock-in — CDN configuration and edge functions are provider-specific'],
+    usecases: ['Video streaming — Netflix, YouTube serve video from CDN edge nodes','E-commerce — product images and static asset delivery','News sites — high read, low write content at global scale','Gaming — software downloads and game asset delivery','DDoS mitigation for financial and government-facing sites'],
+    takeaways: ['Use cache-busting (hash in filenames) for static assets and set infinite TTL','Cloudflare, AWS CloudFront, and Fastly are the leading CDN choices','Edge Functions eliminate round-trips for auth, redirects, and personalization','Always measure cache hit ratio — below 80% means your caching strategy needs tuning','Short TTLs for dynamic content; long TTLs for versioned, immutable static assets'],
+  },
+  'grpc': {
+    tagline: 'High-performance, strongly-typed RPC for microservices',
+    what: 'gRPC is a high-performance, open-source RPC framework by Google that uses Protocol Buffers (protobuf) as the interface definition language and serialization format, and runs over HTTP/2. Services define methods in .proto files, and gRPC generates type-safe client and server code in 10+ languages. It is significantly faster than REST+JSON for service-to-service communication.',
+    why: 'REST+JSON over HTTP/1.1 is verbose, untyped, and slower for high-throughput service-to-service calls.\n- Slow serialization — JSON is text-based; protobuf is binary and 3-10x smaller\n- No code generation from REST — hand-written clients with no type safety\n- HTTP/1.1 limitations — no multiplexing, header compression, or server push\n- Inconsistent API contracts across services without enforced schemas',
+    concepts: [{name:'Protocol Buffers',desc:'Binary serialization format — faster and smaller than JSON'},{name:'.proto file',desc:'Service and message definitions — source of truth for the API contract'},{name:'Stub',desc:'Auto-generated client code for calling remote methods as if local'},{name:'Channel',desc:'Long-lived HTTP/2 connection between client and server'},{name:'Unary RPC',desc:'Single request → single response (like HTTP REST)'},{name:'Server Streaming',desc:'Single request → stream of responses'},{name:'Client Streaming',desc:'Stream of requests → single response'},{name:'Bidirectional Streaming',desc:'Both sides stream simultaneously — real-time communication'}],
+    how: ['Define service methods and message types in a .proto file','Run protoc compiler to generate client and server code','Implement the server interface in your language of choice','Clients use the generated stub to call remote methods as local functions','gRPC serializes requests to binary protobuf and sends over HTTP/2','HTTP/2 multiplexes multiple calls over a single TCP connection','Server deserializes, processes, and returns a protobuf response'],
+    patterns: ['gRPC for internal, REST for external — use gRPC between services, REST for clients','gRPC-Gateway — generate REST proxy from .proto files for backward compatibility','Service mesh + gRPC — Envoy handles mTLS and load balancing for gRPC traffic','Streaming for real-time — bidirectional streaming for live data feeds','Protobuf schema registry — version and manage .proto files centrally'],
+    pros: ['Performance — binary protobuf is 3-10x faster than JSON; HTTP/2 multiplexing','Strong typing — .proto schema catches type errors at compile time, not runtime','Code generation — auto-generated clients in 10+ languages from one .proto file','Streaming — native support for server, client, and bidirectional streaming','Deadline propagation — timeouts and cancellation propagate across service calls'],
+    cons: ['Not browser-native — requires gRPC-Web proxy or transcoding for browser clients','Binary format — harder to debug than JSON (need special tools to inspect traffic)','Schema evolution — must maintain backward compatibility in .proto files carefully','Smaller ecosystem than REST — fewer off-the-shelf tools and middleware','Overkill for simple, low-throughput APIs — REST is simpler to implement'],
+    usecases: ['Google internal APIs — gRPC\'s origin and primary use case','Microservice-to-microservice communication at high throughput','Mobile backend APIs — smaller payloads reduce battery and data usage','Real-time streaming data (live scores, market data, IoT)','Polyglot service ecosystems needing consistent API contracts'],
+    takeaways: ['Use gRPC for internal service-to-service calls; REST or GraphQL for external APIs','Treat .proto files as the API contract — version control and review changes carefully','Use buf.build for protobuf linting, formatting, and schema registry management','gRPC-Gateway lets you expose REST endpoints from gRPC services without duplication','HTTP/2 connection multiplexing makes gRPC vastly more efficient than HTTP/1.1 at scale'],
+  },
+  'devops': {
+    tagline: 'Culture, practices, and tools for faster, reliable delivery',
+    what: 'DevOps is a cultural and technical movement that unifies software development (Dev) and IT operations (Ops) to shorten the development lifecycle and deliver software faster and more reliably. It breaks down silos between teams, automates manual processes, and emphasizes shared responsibility for the entire lifecycle from code commit to production operation.',
+    why: 'Traditional Dev and Ops were separate, often adversarial teams — Dev pushed changes fast, Ops prioritized stability at all costs.\n- Long, infrequent, risky deployments (quarterly releases)\n- Blame culture between Dev and Ops when things broke\n- Slow incident response because Ops didn\'t understand the code\n- Manual, inconsistent deployment processes prone to human error',
+    concepts: [{name:'CI/CD',desc:'Automated build, test, and deployment pipelines'},{name:'Infrastructure as Code',desc:'Manage infrastructure via code (Terraform, Ansible)'},{name:'Monitoring & Alerting',desc:'Observe system health; alert on anomalies before users notice'},{name:'SLO/SLA',desc:'Service Level Objectives and Agreements defining reliability targets'},{name:'Blameless Post-mortem',desc:'Incident review focused on systems, not people'},{name:'Feature Flags',desc:'Toggle features independently of deployments'},{name:'Shift Left Security',desc:'Integrate security testing early in the development pipeline'},{name:'DORA Metrics',desc:'Deploy frequency, lead time, change failure rate, MTTR'}],
+    how: ['Developers commit code to version control (Git) throughout the day','CI pipeline automatically builds, tests, and packages the application','CD pipeline deploys to staging automatically on successful CI','Automated tests validate the staging deployment','Feature flags allow features to deploy hidden from users','Monitoring and alerting detect production issues within minutes','On-call engineers respond; blameless post-mortems improve the system'],
+    patterns: ['GitOps — git repo is single source of truth for infrastructure and app state','Blue-Green — zero-downtime releases with instant rollback capability','Canary releases — gradually shift traffic to limit blast radius of new releases','Immutable infrastructure — never patch servers; replace with new images','Shift-left testing — security and performance tests earlier in the pipeline'],
+    pros: ['Faster delivery — hours to days from commit to production, not months','Higher reliability — automation reduces human error in deployments','Faster recovery — automated rollback and runbooks reduce MTTR','Shared responsibility — Dev and Ops aligned around the same goals','Continuous feedback — production metrics feed back into development priorities'],
+    cons: ['Cultural resistance — changing how teams collaborate is harder than tools','Initial investment — CI/CD, monitoring, and IaC setup is significant upfront work','Toolchain complexity — many tools to integrate and maintain','Security risks — automation at speed without guardrails is dangerous','Skill requirements — teams need broader skills across dev, ops, and security'],
+    usecases: ['SaaS companies deploying multiple times per day','Enterprise digital transformation programs','Regulated industries with automated compliance checks','Platform engineering teams building internal developer platforms','Startups wanting to move fast without breaking things'],
+    takeaways: ['DevOps is 80% culture, 20% tools — fix team structure and incentives first','DORA metrics are the best way to measure and improve DevOps maturity','You build it, you run it — give teams full ownership of services in production','Blameless post-mortems are the most impactful practice for a healthy DevOps culture','Start with CI/CD and basic monitoring — don\'t try to implement everything at once'],
+  },
+  'observability': {
+    tagline: 'Understand your system\'s internal state from its external outputs',
+    what: 'Observability is the ability to understand the internal state of a system by examining its external outputs — logs, metrics, and traces. Unlike traditional monitoring (which tells you something is wrong), observability lets you ask arbitrary questions about system behavior without knowing in advance what might fail. The three pillars are Logs, Metrics, and Traces.',
+    why: 'Modern distributed systems fail in ways that are impossible to predict with pre-built dashboards.\n- "Unknown unknowns" — failures in distributed systems that no dashboard was built to catch\n- Slow debugging — hours spent grepping logs across dozens of services\n- No correlation between a user complaint and a specific request trace\n- Reactive monitoring — only knowing something is wrong after users report it',
+    concepts: [{name:'Logs',desc:'Timestamped records of discrete events — structured JSON logs are searchable'},{name:'Metrics',desc:'Numeric measurements over time (latency p99, error rate, throughput)'},{name:'Traces',desc:'End-to-end record of a request\'s journey across multiple services'},{name:'Span',desc:'A single unit of work within a trace — one service call or DB query'},{name:'RED Method',desc:'Rate, Errors, Duration — the three key metrics for any service'},{name:'SLO',desc:'Service Level Objective — reliability target (e.g., 99.9% of requests < 200ms)'},{name:'Error Budget',desc:'Allowed downtime before an SLO is breached — guides release decisions'},{name:'OpenTelemetry',desc:'Vendor-neutral SDK for emitting logs, metrics, and traces from any service'}],
+    how: ['Instrument services to emit structured logs, metrics, and traces','Use OpenTelemetry SDK for vendor-neutral instrumentation across all services','Collect and aggregate logs in a centralized system (ELK, Grafana Loki)','Scrape metrics into time-series database (Prometheus) and visualize in Grafana','Distribute traces via headers (traceparent) and collect in Jaeger or Tempo','Define SLOs and alert when error budget consumption rate is too high','Use dashboards and trace queries to diagnose production incidents'],
+    patterns: ['Three pillars — logs for events, metrics for trends, traces for request flows','Structured logging — emit JSON logs with consistent fields for machine parsing','Exemplars — link a metric data point to the specific trace that caused it','SLO-based alerting — alert on error budget burn rate, not arbitrary thresholds','Single pane of glass — unified dashboard correlating all three signal types'],
+    pros: ['Debug novel failures — ask arbitrary questions without pre-built dashboards','Faster MTTR — traces show exactly where in the system a failure occurred','Proactive detection — anomaly detection catches issues before users notice','Capacity planning — metrics inform scaling decisions with data','Developer confidence — fast feedback on the behavior of deployed code'],
+    cons: ['Cost — storing logs, metrics, and traces at scale is expensive','Instrumentation overhead — adding observability to legacy code is time-consuming','Alert fatigue — too many low-quality alerts desensitizes on-call engineers','High cardinality — labels with too many unique values break metrics systems','Tool sprawl — managing Prometheus, Grafana, Jaeger, ELK separately is complex'],
+    usecases: ['Debugging latency spikes in microservices','Root cause analysis of production incidents','Capacity planning and resource optimization','SLO monitoring and error budget tracking','Customer experience monitoring (real user metrics)'],
+    takeaways: ['Adopt OpenTelemetry from day one — it gives you vendor flexibility long-term','Structured logging (JSON) is non-negotiable — unstructured logs don\'t scale','Define SLOs before building dashboards — alerts should protect user experience','Start with the RED Method (Rate, Errors, Duration) for every service boundary','Consider a unified platform (Grafana Stack, Datadog, Honeycomb) over separate tools'],
+  },
+};
+
+const ALIASES = {
+  'k8s':'kubernetes','container orchestration':'kubernetes','containers':'docker','containerization':'docker',
+  'eda':'event-driven architecture','event driven':'event-driven architecture','event-driven':'event-driven architecture',
+  'api-gateway':'api gateway','kong':'api gateway','istio':'service mesh','linkerd':'service mesh','envoy':'service mesh',
+  'gql':'graphql','apache kafka':'kafka','redis cache':'redis','memcached':'redis',
+  'iac':'terraform','infrastructure as code':'terraform','hashicorp terraform':'terraform',
+  'ci':'cicd','cd':'cicd','ci/cd':'cicd','continuous integration':'cicd','continuous delivery':'cicd',
+  'continuous deployment':'cicd','github actions':'cicd','jenkins':'cicd','gitlab ci':'cicd',
+  'faas':'serverless','lambda':'serverless','aws lambda':'serverless','functions as a service':'serverless',
+  'command query responsibility segregation':'cqrs','cqrs pattern':'cqrs',
+  'oauth':'oauth2','jwt':'oauth2','oidc':'oauth2','openid connect':'oauth2','sso':'oauth2',
+  'authentication':'oauth2','authorization':'oauth2',
+  'content delivery network':'cdn','cloudfront':'cdn','cloudflare':'cdn','content delivery':'cdn',
+  'load balancer':'load balancing','alb':'load balancing','nlb':'load balancing','elb':'load balancing',
+  'protocol buffers':'grpc','protobuf':'grpc','rpc':'grpc',
+  'devsecops':'devops','gitops':'devops','sre':'observability','site reliability engineering':'observability',
+  'monitoring':'observability','logging':'observability','tracing':'observability','opentelemetry':'observability','otel':'observability',
+  'event sourcing':'event-driven architecture','message queue':'kafka','rabbitmq':'kafka','sqs':'kafka',
+};
+
+function detectTopic(input) {
+  const key = input.toLowerCase().trim();
+  if (KB[key]) return key;
+  if (ALIASES[key]) return ALIASES[key];
+  for (const k of Object.keys(KB)) {
+    if (key.includes(k) || k.includes(key)) return k;
+  }
+  for (const [alias, target] of Object.entries(ALIASES)) {
+    if (key.includes(alias) || alias.includes(key)) return target;
+  }
+  return null;
+}
+
+// ─── GENERATE PRESENTATION ──────────────────────────────
+function generatePresentation() {
+  const topicInput = document.getElementById('f-topic').value.trim();
+  if (!topicInput) {
+    document.getElementById('f-topic').focus();
+    document.getElementById('f-topic').style.borderColor = '#e11d48';
+    setTimeout(() => document.getElementById('f-topic').style.borderColor = '', 2000);
+    return;
+  }
+
+  const kbKey = detectTopic(topicInput);
+  const kb = kbKey ? KB[kbKey] : null;
+
+  const formWhat     = document.getElementById('f-what').value.trim();
+  const formWhy      = document.getElementById('f-why').value.trim();
+  const formHow      = document.getElementById('f-how').value.trim();
+  const formPatterns = document.getElementById('f-patterns').value.trim();
+  const formPros     = lines(document.getElementById('f-pros').value);
+  const formCons     = lines(document.getElementById('f-cons').value);
+  const formUsecases = lines(document.getElementById('f-usecases').value);
+  const formTakeaways= lines(document.getElementById('f-takeaways').value);
+  const formConcepts = getConcepts();
+
+  const data = {
+    topic:     topicInput,
+    tagline:   document.getElementById('f-tagline').value.trim() || (kb?.tagline || ''),
+    audience:  document.getElementById('f-audience').value,
+    theme:     selectedTheme,
+    what:      formWhat      || (kb?.what || ''),
+    why:       formWhy       || (kb?.why  || ''),
+    concepts:  formConcepts.length ? formConcepts : (kb?.concepts || []),
+    how:       formHow       || (kb ? (kb.how||[]).join('\n') : ''),
+    patterns:  formPatterns  || (kb ? (kb.patterns||[]).join('\n') : ''),
+    pros:      formPros.length  ? formPros  : (kb?.pros  || []),
+    cons:      formCons.length  ? formCons  : (kb?.cons  || []),
+    usecases:  formUsecases.length ? formUsecases : (kb?.usecases || []),
+    takeaways: formTakeaways.length ? formTakeaways : (kb?.takeaways || []),
+  };
+
+  slides = [];
+  const agendaItems = [];
+  let sectionNum = 0;
+
+  // 1. Title
+  slides.push(buildTitleSlide(data));
+
+  // Build sections
+  const sections = [];
+  if (data.what)                  sections.push({ key:'what',      label:'What Is It?',              icon: icons.what });
+  if (data.why)                   sections.push({ key:'why',       label:'Why It Matters',            icon: icons.why });
+  if (data.concepts.length)       sections.push({ key:'concepts',  label:'Core Concepts',             icon: icons.concepts });
+  if (data.how)                   sections.push({ key:'how',       label:'How It Works',              icon: icons.how });
+  if (data.patterns)              sections.push({ key:'patterns',  label:'Architecture Patterns',     icon: icons.patterns });
+  if (data.pros.length || data.cons.length) sections.push({ key:'tradeoffs', label:'Trade-offs',      icon: icons.tradeoffs });
+  if (data.usecases.length)       sections.push({ key:'usecases', label:'Use Cases',                 icon: icons.usecases });
+  if (data.takeaways.length)      sections.push({ key:'takeaways',label:'Key Takeaways',             icon: icons.takeaways });
+
+  sections.forEach(s => agendaItems.push(s.label));
+
+  // 2. Agenda
+  if (agendaItems.length > 1) {
+    slides.push(buildAgendaSlide(data, agendaItems));
+  }
+
+  // 3. Content slides
+  sections.forEach((s, i) => {
+    sectionNum = i + 1;
+    switch(s.key) {
+      case 'what':
+        slides.push(buildSectionSlide(data, sectionNum, 'What Is ' + data.topic + '?', data.what));
+        break;
+      case 'why':
+        slides.push(buildSectionSlide(data, sectionNum, 'Why It Matters', data.why));
+        break;
+      case 'concepts':
+        slides.push(buildConceptsSlide(data, data.concepts));
+        break;
+      case 'how': {
+        const steps = lines(data.how);
+        if (steps.length > 1) {
+          slides.push(buildStepsSlide(data, 'How It Works', steps, icons.how));
+        } else {
+          slides.push(buildSectionSlide(data, sectionNum, 'How It Works', data.how));
+        }
+        break;
+      }
+      case 'patterns': {
+        const pts = lines(data.patterns);
+        if (pts.length > 1) {
+          slides.push(buildBulletsSlide(data, 'Architecture Patterns', pts, icons.patterns));
+        } else {
+          slides.push(buildSectionSlide(data, sectionNum, 'Architecture Patterns', data.patterns));
+        }
+        break;
+      }
+      case 'tradeoffs':
+        slides.push(buildProsConsSlide(data, data.pros, data.cons));
+        break;
+      case 'usecases':
+        slides.push(buildUsecasesSlide(data, data.usecases));
+        break;
+      case 'takeaways':
+        slides.push(buildTakeawaysSlide(data, data.takeaways));
+        break;
+    }
+  });
+
+  // Last: Closing
+  slides.push(buildClosingSlide(data));
+
+  // Show slide view
+  currentSlide = 0;
+  document.getElementById('slide-topic-label').textContent = topicInput;
+  document.getElementById('slide-view').classList.remove('hidden');
+  document.getElementById('form-view').style.display = 'none';
+
+  // Build dots
+  const dots = document.getElementById('slide-dots');
+  dots.innerHTML = slides.map((_, i) => `<div class="slide-dot${i===0?' active':''}" onclick="goToSlide(${i})"></div>`).join('');
+
+  // Update progress bar color for theme
+  const themeAccents = {
+    blue:'#2563eb', teal:'#0d9488', purple:'#7c3aed', dark:'#f59e0b', rose:'#e11d48', amber:'#d97706'
+  };
+  document.getElementById('progress-bar').style.background = themeAccents[selectedTheme] || '#2563eb';
+
+  renderCurrentSlide();
+}
+
+// ─── NAVIGATION ─────────────────────────────────────────
+function navigate(dir) {
+  const next = currentSlide + dir;
+  if (next < 0 || next >= slides.length) return;
+  currentSlide = next;
+  renderCurrentSlide();
+}
+
+function goToSlide(i) {
+  currentSlide = i;
+  renderCurrentSlide();
+}
+
+function renderCurrentSlide() {
+  document.getElementById('slide-card').innerHTML = slides[currentSlide];
+  document.getElementById('slide-counter').textContent = `Slide ${currentSlide+1} of ${slides.length}`;
+  document.getElementById('progress-bar').style.width = `${((currentSlide+1)/slides.length)*100}%`;
+  document.getElementById('btn-prev').disabled = currentSlide === 0;
+  document.getElementById('btn-next').disabled = currentSlide === slides.length - 1;
+  document.querySelectorAll('.slide-dot').forEach((d,i) => d.classList.toggle('active', i===currentSlide));
+}
+
+function backToForm() {
+  document.getElementById('slide-view').classList.add('hidden');
+  document.getElementById('form-view').style.display = '';
+}
+
+// ─── KEYBOARD ───────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (document.getElementById('slide-view').classList.contains('hidden')) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+    e.preventDefault(); navigate(1);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault(); navigate(-1);
+  } else if (e.key === 'Escape') {
+    backToForm();
+  }
+});
+</script>
+</body>
+</html>
